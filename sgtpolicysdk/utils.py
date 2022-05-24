@@ -40,8 +40,8 @@ from datetime import datetime, timedelta, tzinfo
 
 from past.builtins import basestring
 
-from .exceptions import ApiError, RateLimitError
-from .response_codes import RATE_LIMIT_RESPONSE_CODE
+#from .exceptions import ApiError, RateLimitError
+#from .response_codes import RATE_LIMIT_RESPONSE_CODE
 
 
 EncodableFile = namedtuple('EncodableFile',

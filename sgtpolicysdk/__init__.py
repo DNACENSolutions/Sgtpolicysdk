@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 from ._metadata import *
-#from .api import DNACenterAPI
+from .api import DNASGTPolicyCenterAPI
 from .client_manager import DnacClientManager
 from .exceptions import (
     DnacException,

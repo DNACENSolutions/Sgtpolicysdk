@@ -21,9 +21,7 @@ SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from builtins import *
-
 from past.builtins import basestring
-
 from ...client_manager import DnacClientManager
 from ...utils import (
     apply_path_params,
@@ -39,7 +37,8 @@ class SecurityGroups(object):
     methods that return native Python objects.
     """
 
-    def __init__(self, session):
+    def __init__(self, 
+                 session):
         """Initialize a new Devices
         object with the provided RestSession.
         Args:
@@ -53,3 +52,33 @@ class SecurityGroups(object):
         super(SecurityGroups, self).__init__()
 
         self._session = session
+    
+    def get_security_group_by_name(self,name):
+        """
+        Get security group by name
+
+        Args:
+            name(basestring): name path parameter.
+            **request_parameters: Additional request parameters (provides
+                support for parameters that may be added in the future).
+        Returns:
+            MyDict: JSON response. Access the object's properties by using
+            the dot notation or the bracket notation.
+        Raises:
+            TypeError: If the parameter types are incorrect.
+            MalformedRequest: If the request body created is invalid.
+            ApiError: If the DNA Center cloud returns an error.
+        """
+        check_type(name, basestring,
+                   may_be_none=False)
+        params = {
+        "name": name}
+        params.update(params)
+        params = dict_from_items_with_values(params)
+        resource_path = "/v2/data/customer-facing-service/scalablegroup/access/"
+        response = self._session.call_api("GET",resource_path,params=params)
+        print(response)
+        return response
+
+
+ 

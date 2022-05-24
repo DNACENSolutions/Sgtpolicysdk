@@ -335,7 +335,7 @@ class DnacClientManager(ClientManager):
         self._is_maglev = maglev
         self.cas_ticket = None
         self._maglev_token_time = ""
-        self.initialize_loggers()
+        #self.initialize_loggers()
         if connect:
             self.connect()
         self.setup_api()
