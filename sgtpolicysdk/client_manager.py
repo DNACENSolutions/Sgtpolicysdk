@@ -249,7 +249,8 @@ class ClientManager(object):
             url = url.replace("/api/v1/v1/", "/api/v1/")
         if "/api/v2/v2/" in url:
             url = url.replace("/api/v2/v2/", "/api/v2/")
-
+        #if "//" in url:
+        #    url = url.replace("//", "/")
         if "headers" in kwargs:
             headers = kwargs.pop("headers")
         else:
@@ -305,7 +306,7 @@ class DnacClientManager(ClientManager):
     FORTY_FIVE_MIN = 600
     SIXTY_MIN = 900
 
-    def __init__(self, server, username, password, version="v1",base_url = "/api", connect=True, maglev=False):
+    def __init__(self, server, username, password, version="v1",base_url = "/api", connect=True):
         """ Object initializer.
 
         Initializer also aunthenticates using the credentials, and stores the generated
@@ -317,7 +318,6 @@ class DnacClientManager(ClientManager):
             password (str): password to authenticate with
             version (str): version of the API to be used
             connect (bool): flag to authenticate and establish swagger client
-            maglev (bool): flag to call the maglev authenticate
         """
 
         #base_url = base_url
@@ -332,7 +332,6 @@ class DnacClientManager(ClientManager):
 
         self.default_headers = {"Content-Type": "application/json"}
         self.__connected = False
-        self._is_maglev = maglev
         self.cas_ticket = None
         self._maglev_token_time = ""
         #self.initialize_loggers()
@@ -363,26 +362,28 @@ class DnacClientManager(ClientManager):
             self.__connected = False
 
         self.log.info("Connecting to the Apic-em northbound API client.")
-        if not self._is_maglev:
-            self._authenticate()
-        else:
-            self._maglev_authenticate()
-            self._maglev_token_time = int(time.time())
-            self.log.debug("Initial Maglev login time: '{}'.".format(self._maglev_token_time))
+        self._maglev_authenticate()
+        self._maglev_token_time = int(time.time())
+        self.log.debug("Initial Maglev login time: '{}'.".format(self._maglev_token_time))
+    def reconnect_clients(self):
+        self.connect()
 
     def disconnect(self):
         """ Deletes the generated ticket and effectively disconnecting the user. """
 
         try:
             self.log.info("Disconnecting the Apic-em northbound API client.")
-            if not self._is_maglev:
-                self.common_headers.pop("X-Auth-Token")
-                self.common_headers.pop("X-CSRF-Token")
-            else:
-                self.common_headers.pop("Cookie")
+            self.common_headers.pop("Cookie")
         except KeyError:
             self.log.info("Already disconnected from Northbound API client.")
         self.__connected = False
+
+    def api_switch_call(self,method=None,resource_path=None, **kwargs):
+        '''
+        JUST A WRAPPER
+        '''
+        response = self.call_api(method,resource_path,**kwargs)
+        return response
 
     def call_api(self, method, resource_path, **kwargs):
         """ Wrapper of call_api to encode post data.
@@ -422,19 +423,16 @@ class DnacClientManager(ClientManager):
         else:
             copyargs = {'method': method, 'URL': "{}{}".format(self.server, resource_path)}
         copyargs.update(kwargs)
-        if self.__connected and self._is_maglev:
+        if self.__connected :
             self.log.debug("Checking the validity of the Maglev cookie.")
             self._handle_maglev_idle_timeout()
         headers = self.default_headers.copy()
         #TODO (mingyazh): remove trailing back slash of resource path in client
-        if self._is_maglev:
-            if not kwargs.get("timeout"):
-               timeout = DnacClientManager.MAGLEV_TIMEOUT
-            else:
-               timeout = kwargs.get("timeout")
-               kwargs.pop("timeout")
+        if not kwargs.get("timeout"):
+           timeout = DnacClientManager.MAGLEV_TIMEOUT
         else:
-            timeout = None
+           timeout = kwargs.get("timeout")
+           kwargs.pop("timeout")
         if "headers" in kwargs:
             headers.update(kwargs.pop("headers"))
         resource_path = resource_path.rstrip('\/')
@@ -551,7 +549,6 @@ class DnacClientManager(ClientManager):
             If there is api file having the same filename and classname as in default api client
             folder, it will override the default one.
         """
-
         client_path = os.path.expanduser(client_path)
         if not os.path.isdir(client_path):
             self.log.error("{} is not a valid directory.".format(client_path))

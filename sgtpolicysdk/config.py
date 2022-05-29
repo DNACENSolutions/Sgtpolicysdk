@@ -30,7 +30,7 @@ DEFAULT_DEBUG = 'False'
 DEFAULT_VERSION = '2.2.3.3'
 
 #: **base_url** default value.
-DEFAULT_BASE_URL = 'https://sandboxdnac.cisco.com:443'
+DEFAULT_BASE_URL = '/api'
 
 #: **single_request_timeout** default value.
 #: Timeout (in seconds) for the RESTful HTTP requests.

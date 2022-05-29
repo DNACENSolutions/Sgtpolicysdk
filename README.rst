@@ -33,6 +33,32 @@ Installing and upgrading sgtpolicysdk is easy:
     $ pip install sgtpolicysdk --upgrade
 
 
+QuickUsageExample:
+.. code-block:: bash
+    shell$ python3
+    Python 3.7.9 (v3.7.9:13c94747c7, Aug 15 2020, 01:31:08) 
+    [Clang 6.0 (clang-600.0.57)] on darwin
+    Type "help", "copyright", "credits" or "license" for more information.
+
+    >>> from sgtpolicysdk import DNACenterSGTPolicyAPI
+
+    >>> dnac = DNACenterSGTPolicyAPI(server=serverip,username=username,password=password)
+    /Users/pawansingh/Library/Python/3.7/lib/python/site-packages/urllib3/connectionpool.py:1050: InsecureRequestWarning: Unverified HTTPS request is being made to host '...'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/1.26.x/advanced-usage.html#ssl-warnings
+      InsecureRequestWarning,
+
+    >>> dnac.securitygroups.getSecurityGroupIdByName("Auditors")
+    {'status': True, 'id': '6ed523e7-91e4-4600-b6ba-62b822e7f609'}
+
+    >>> dnac.securitygroups.updateSecurityGroup("sampleSGT",virtualNetworks=["WiredVNFBLayer2"])
+    {'status': True}
+
+    >>> dnac.securitygroups.pushAndVerifySecurityGroups(verifyNoRequest=True)
+    {'status': True}
+
+    >>> dnac.securitygroups.updateSecurityGroup("sampleSGT",virtualNetworks=["VN1"])
+    {'status': False, 'failureReason': 'Not all virtualNetworks provided, exist in DNAC, Create VirtualNetwork in DNAC first'}
+
+
 Documentation
 -------------
 

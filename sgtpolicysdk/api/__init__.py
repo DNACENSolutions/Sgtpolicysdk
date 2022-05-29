@@ -32,8 +32,9 @@ import sgtpolicysdk.environment as dnacsgtpolicy_environment
 from sgtpolicysdk.utils import check_type
 from sgtpolicysdk.client_manager import DnacClientManager
 from .v2_3_3_3.securitygroups import SecurityGroups as SecurityGroups_v2_3_3_3
+from .v2_3_3_3.task import Task as Task_v2_3_3_3
 
-class DNASGTPolicyCenterAPI(object):
+class DNACenterSGTPolicyAPI(object):
     """Cisco DNA Center API wrapper.
     Creates a 'session' for all API calls through a created DNACenterAPI
     object.  The 'session' handles authentication, provides the needed headers,
@@ -50,11 +51,10 @@ class DNASGTPolicyCenterAPI(object):
                  single_request_timeout=None,
                  wait_on_rate_limit=None,
                  verify=None,
-                 version=None,
-                 api_version=None,
+                 version='2.3.3.3',
+                 api_version="v1",
                  debug=None,
-                 maglev=None,
-                 connect=None):
+                 connect=True):
         """Create a new DNASGTPolicyCenterAPI object.
         An access token is required to interact with the DNA Center APIs.
         This package supports two methods for you to generate the
@@ -142,14 +142,14 @@ class DNASGTPolicyCenterAPI(object):
         # leverage a single RESTful 'session' connecting to the DNA Center
         # cloud.
         
-        self._session = DnacClientManager(server=server,username=username, password=password,base_url=base_url,maglev=True,connect=True)
+        self._session = DnacClientManager(server=server,username=username, password=password,base_url=base_url)
 
         # API wrappers
         if version == '2.3.3.3':
+            self.task = \
+                Task_v2_3_3_3(self._session)
             self.securitygroups = \
-                SecurityGroups_v2_3_3_3(
-                    self._session)
-
+                SecurityGroups_v2_3_3_3(self)
     @property
     def session(self):
         """The DNA Center API session."""
