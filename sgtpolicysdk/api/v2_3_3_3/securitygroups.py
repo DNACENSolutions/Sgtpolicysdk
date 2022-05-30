@@ -77,6 +77,11 @@ class SecurityGroups(object):
                 When Success : {'status':True}  
                 When Failed  : {status:False, "failureReason":"<failure reason>"}
         '''
+        check_type(sgName, basestring)
+        check_type(sgTag,int)
+        check_type(sgDescription,basestring)
+        check_type(virtualNetworks,list)
+
         security_groups = [
             {
                 "description": sgDescription,
@@ -94,7 +99,7 @@ class SecurityGroups(object):
             self.log.error("Creating a new security group failed:{0}".format(taskStatus['failureReason']))
             return {'status':False, "failureReason":"Creating security group {} failed:{}".format(taskStatus['failureReason'])}
         else:
-            self.log.info("#----SUCESSFULLY CREATED SCALABLE GROUP {}----#".format(sg_name))
+            self.log.info("#----SUCCESSFULLY CREATED SCALABLE GROUP //{}//----#".format(sgName))
         if not virtualNetworks:
             virtualNetworks = ['DEFAULT_VN']
         return self.addSecurityGroupToVirtualNetwork(sgName, virtualNetworks)
@@ -109,6 +114,9 @@ class SecurityGroups(object):
                 When Success: {"status":True, "failureReason":""}
                 {"status":False, "failureReason":"<Failure expanation>"
         '''
+        check_type(sg_name,basestring)
+        check_type(virtualNetworks,list)
+
         securityGroup = self.getSecurityGroupIdByName(sg_name)
         self.log.info(securityGroup)
         if securityGroup['status']:
@@ -134,7 +142,7 @@ class SecurityGroups(object):
             return {'status':False, 
                     'failureReason':'Failed in updating SG in VirtualNetworks: {}'.format(taskStatus['failureReason'])}
         self.log.info("#######################################################################################")
-        self.log.info("#----SUCESSFULLY ADDED SG {} to VN {}----#".format(sg_name, virtualNetworks))
+        self.log.info("#----SUCCESSFULLY ADDED SG {} to VN {}----#".format(sg_name, virtualNetworks))
         self.log.info("#######################################################################################")
         return {"status":True}
 
@@ -148,6 +156,12 @@ class SecurityGroups(object):
                 When Success: {"status":True, "failureReason":""}
                 {"status":False, "failureReason":"<Failure expanation>"
         '''
+        check_type(name,basestring)
+        check_type(virtualNetworks,list)
+        check_type(description,basestring)
+        check_type(securityGroupTag,int)
+        check_type(propagateToAci,bool)
+
         self.log.info("Updating security group")
         params= { "name" : name }
         response_sg = self.get_securityGroup(params=params)
@@ -186,6 +200,9 @@ class SecurityGroups(object):
             Output: Success -> True
                     Failure -> False
         '''
+        check_type(securityGroupList,list)
+        check_type(expect,bool) 
+     
         self.log.info("Start to check sg_list in DNAC")
         missing_list=[]
         exist_list=[]
@@ -200,7 +217,7 @@ class SecurityGroups(object):
         if expect and missing_list:
             return {'status':False, 'failureReason':"These expected security groups are missing in DNAC: {}".format(missing_list)}
         elif not expect and exist_list:
-            return {'status':False, 'failureReason':"These uexpected security groups are present in DNAC: {}".format(exist_list)}
+            return {'status':False, 'failureReason':"These unexpected security groups are present in DNAC: {}".format(exist_list)}
         else:
             return {'status' : True }
 
@@ -212,6 +229,8 @@ class SecurityGroups(object):
                 if Security Group Found: {status:True, 'id':<id>}
                 if Security Group not Found: {status:False, 'id':'', 'errorReason':''}
         '''
+        check_type(name,basestring)
+
         self.log.info("Fetching security group id for {}".format(name))
         params = { "name" : name }
         response_sg = self.get_securityGroup(params=params)
@@ -231,6 +250,8 @@ class SecurityGroups(object):
                 if Security Group Found: {status:True, 'securityGroupTag':<securityGroupTag>}
                 if Security Group not Found: {status:False, 'securityGroupTag':'', 'errorReason':''}
         '''
+        check_type(name,basestring)
+
         self.log.info("Fetching security group tag for {}".format(name))
         params = { "name": name}
         response_sg = self.get_securityGroup(params=params)
@@ -246,7 +267,7 @@ class SecurityGroups(object):
         '''
             getSecurityGroupCount
             description: Return the count of SecurityGroups in DNAC
-            INPUT: 
+            INPUT: NA
             OUTPUT:
                 status:True
                 count: Total SGT count
@@ -270,6 +291,8 @@ class SecurityGroups(object):
                 status:True 
                 status:False, failureReason: <reason> 
         '''
+        check_type(name,basestring)
+
         params= { "name" : name }
         response_sg = self.get_securityGroup(params=params)
         sgt_data= {
@@ -289,7 +312,7 @@ class SecurityGroups(object):
         if (taskStatus['isError']):
             self.log.error("Deleting security group failed:{0}".format(taskStatus['failureReason']))
             return {"status" : False, 'failureReason':'Deleting security group {} failed:{}'.format(name,taskStatus['failureReason'])}
-        self.log.info("#----SUCESSFULLY DELETED Security Group {}----#".format(sg_name))
+        self.log.info("#----SUCCESSFULLY DELETED Security Group {}----#".format(sg_name))
         return { "status" : True }
 
     def deleteSecurityGroupByTag(self, securityGroupTag):
@@ -301,6 +324,8 @@ class SecurityGroups(object):
                 status:True 
                 status:False, failureReason: <reason> 
         '''
+        check_type(securityGroupTag,int)
+
         params = { 'securityGroupTag' : securityGroupTag }
         response_sg = self.get_securityGroup(params=params)
         sgt_data= {
@@ -320,7 +345,7 @@ class SecurityGroups(object):
         if (taskStatus['isError']):
             self.log.error("Deleting security group failed:{0}".format(taskStatus['failureReason']))
             return {"status" : False, 'failureReason':'Deleting security group {} failed:{}'.format(name,taskStatus['failureReason'])}
-        self.log.info("#----SUCESSFULLY DELETED Security Group {}----#".format(sg_name))
+        self.log.info("#----SUCCESSFULLY DELETED Security Group {}----#".format(sg_name))
         return { "status" : True }
 
     #Deploy Functions
@@ -328,12 +353,16 @@ class SecurityGroups(object):
         '''
             Function: pushAndVerifySecurityGroups
             INPUT: 
-                verifyDone = True/False  : to validate if the SGT push is complete.
-                verifyNoRequest = True/False  : To validate there was not pending deploy.
+                verifyDone = True/False  : To validate if the SGT push is complete.
+                verifyNoRequest = True/False  : To validate there was no pending deploy action.
             OUTPUT:
                 For Success: {'status':True}
                 For Faillure: {'status':False, 'failureReason': "<reason string>"}
         '''
+        check_type(verifyDone,bool)
+        check_type(verifyNoRequest,bool)
+        check_type(timeout,int)
+
         self.log.info("Start to deploy sg")
         response = self.put_acaControllerServicePush(timeout=timeout)
         response_deploy_sg = self._task.wait_for_task_complete(response)
@@ -341,7 +370,7 @@ class SecurityGroups(object):
         if verifyDone:
             if (response_deploy_sg['data'] == "deployStatus=DONE"):
                 self.log.info("######################################")
-                self.log.info("#----SUCESSFULLY DEPLOY----#")
+                self.log.info("#----SUCCESSFULLY DEPLOYED----#")
                 self.log.info("######################################")
                 return { 'status' : True }
             else:
@@ -356,12 +385,17 @@ class SecurityGroups(object):
         '''
             Function: deployAndVerifySecurityGroups
             INPUT: 
-                verifyDone = True/False  : to validate if the SGT push is complete.
-                verifyNoRequest = True/False  : To validate there was not pending deploy.
+                verifyDone = True/False  : To validate if the SGT push is complete.
+                verifyNoRequest = True/False  : To validate there was no pending deploy action.
             OUTPUT:
                 For Success: {'status':True}
                 For Faillure: {'status':False, 'failureReason': "<reason string>"}
         '''
+        check_type(verifyDone,bool)
+        check_type(verifyNoRequest,bool)
+        check_type(retries,int)
+        check_type(timeout,int)
+        
         try:
             while retries:
                 try:
@@ -375,7 +409,7 @@ class SecurityGroups(object):
                     if verifyDone:
                         if response_deploy['data'] == "deployStatus=DONE":
                             self.log.info("############################")
-                            self.log.info("#----SUCESSFULLY DEPLOY----#")
+                            self.log.info("#----SUCCESSFULLY DEPLOYED----#")
                             self.log.info("############################")
                             return { 'status' : True }
                         else:
@@ -456,10 +490,12 @@ class SecurityGroups(object):
     def get_securityGroup_by_instance_uuid(self,sgt_instance_uuid,**kwargs):
         '''
             Function: get_securityGroup_by_instance_uuid
-            Description: GET request in SGT Group
+            Description: GET request in SGT Group from uuid
             INPUT: kwargs
-            OUTPUT: response
+            OUTPUT: Returns response
         '''
+        check_type(sgt_instance_uuid,basestring)
+
         url = PATH_SG + "/{sgt_instance_uuid}"
         method = 'GET'
         response = self._session.api_switch_call(method=method,
@@ -472,10 +508,12 @@ class SecurityGroups(object):
     def delete_securityGroup_by_instance_uuid(self, instance_uuid,**kwargs):
         '''
             Function: delete_securityGroup_by_instance_uuid
-            Description: DELETE request for SGT Group
+            Description: DELETE request for SGT Group by uuid
             INPUT: kwargs
             OUTPUT: response
         '''
+        check_type(instance_uuid,basestring)
+
         url = PATH_SG + "/" + instance_uuid
         method = 'DELETE'
         response = self._session.api_switch_call(method=method,
@@ -487,10 +525,10 @@ class SecurityGroups(object):
 
     def put_securityGroup(self, **kwargs):
         '''
-            Function: put_securityGroup
-            Description: DELETE request for SGT Group
+            Function: Update security Group
+            Description: Update request for SGT Group
             INPUT: kwargs
-            OUTPUT: response
+            OUTPUT: Returns response
         '''
         url = PATH_SG
         method = 'PUT'
@@ -506,7 +544,7 @@ class SecurityGroups(object):
             Function: get_securityGroup_summary
             Description: GET request for security group summary
             INPUT: kwargs
-            OUTPUT: response
+            OUTPUT: Returns response
         '''
         url = PATH_SG_SUM
         method = 'GET'
@@ -517,7 +555,11 @@ class SecurityGroups(object):
 
     def get_securityGroup_byparams(self,**kwargs):
         '''
-            GET on Security Group uuid
+            Function: get_securityGroup_byparams
+            Description: GET request for security group summary by different parameters
+            INPUT: kwargs
+            OUTPUT: Returns response
+
         '''
         url = PATH_SG
         method = 'GET'
@@ -532,7 +574,10 @@ class SecurityGroups(object):
     #============================Virtual Networks Functions=======================
     def getVirtualNetwork(self, **kwargs):
         '''
-            
+            Function: getVirtualNetwork
+            Description: GET request for virtual Network details
+            INPUT: kwargs
+            OUTPUT: Returns response
         '''
         url = VIRTUALNETWORKSPATH
         method = 'GET'
@@ -545,6 +590,10 @@ class SecurityGroups(object):
 
     def putVirtualNetwork(self, **kwargs):
         '''
+            Function: putVirtualNetwork
+            Description: Update request for virtual Network details
+            INPUT: kwargs
+            OUTPUT: Returns response
             
         '''
         url = VIRTUALNETWORKSPATH
@@ -558,6 +607,11 @@ class SecurityGroups(object):
     #=============================ACA Controller Functions=======================
     def put_acaControllerServiceDeploy(self, **kwargs):
         '''
+            Function: put_acaControllerServiceDeploy
+            Description: Update request for Deploy now action
+            INPUT: kwargs
+            OUTPUT: Returns response
+
         '''
         url = ACACONTROLLERPATH + "/deploy"
         method = 'PUT'
@@ -570,6 +624,11 @@ class SecurityGroups(object):
 
     def put_acaControllerServicePush(self, **kwargs):
         '''
+            Function: put_acaControllerServiceDeploy
+            Description: Update request for controller service push action
+            INPUT: kwargs
+            OUTPUT: Returns response
+
         '''
         url = ACACONTROLLERPATH + "/pushSGs"
         method = 'PUT'
