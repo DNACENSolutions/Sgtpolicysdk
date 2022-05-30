@@ -10,7 +10,7 @@ sgtpolicysdk
 
 .. code-block:: python
 
-    from sgtpolicysdk import api
+    from sgtpolicysdk import DNACenterSGTPolicyAPI
 
 Introduction_
 
