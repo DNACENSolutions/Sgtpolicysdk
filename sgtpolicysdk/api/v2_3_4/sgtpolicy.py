@@ -64,7 +64,7 @@ class SGTPolicy(object):
         try:
             self.log.info("get contract info")
 
-            contract_response = self.services.get_contract_access(timeout=60)
+            contract_response = self._contract.get_contractAccess(timeout=60)
             for response in contract_response["response"]:
                 if response["name"] == contract_name:
                     contract_id = str(response["id"])

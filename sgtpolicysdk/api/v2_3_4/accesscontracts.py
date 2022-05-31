@@ -86,10 +86,8 @@ class AccessContracts(object):
         self.log.info("Start to get all contract names in DNAC")
         try:
             contractlist = []
-
-            # contract_response = self.services.get_contract_access(timeout=60)
             params = {'offset': 0, 'limit': 5000, 'contractSummary': 'true'}
-            contract_response = self.services.get_contractAccessSummary(params=params,timeout=240)
+            contract_response = self.get_contractAccessSummary(params=params,timeout=240)
             contract_response_sum = contract_response["response"][0]
 
             for response in contract_response_sum["acaContractSummary"]:
@@ -106,7 +104,7 @@ class AccessContracts(object):
         self.log.info("Start to count contract in DNAC")
         try:
             params = {'offset': 0, 'limit': 5000, 'contractSummary': 'true'}
-            contract_response = self.services.get_contractAccessSummary(params=params,timeout=240)
+            contract_response = self.get_contractAccessSummary(params=params,timeout=240)
             contract_response_sum = contract_response["response"][0]
             count = contract_response_sum["totalContractCount"]
             return count
@@ -159,7 +157,7 @@ class AccessContracts(object):
         self.log.info("Start to update contract {}".format(contract_name))
         try:
             self.log.info("Update contract")
-            contract_response = self.services.get_contract_access(timeout=60)
+            contract_response = self.get_contractAccess(timeout=60)
             for response in contract_response["response"]:
                 if response["name"] == contract_name:
                     contract_id = str(response["id"])
@@ -167,7 +165,7 @@ class AccessContracts(object):
                     break
             else:
                 raise Exception("The contract {} isnot found".format(contract_name))
-            contract_response = self.services.put_contractAccess(json=condition, timeout=240)
+            contract_response = self.put_contractAccess(json=condition, timeout=240)
             taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
             self.log.info(taskStatus)
             if (taskStatus['isError']):
@@ -185,7 +183,7 @@ class AccessContracts(object):
     def deleteAccessContract(self, contract_name, expect=True):
         self.log.info("Start to delete contract {} in DNAC".format(contract_name))
         try:
-            contract_response = self.services.get_contract_access(timeout=60)
+            contract_response = self.get_contractAccess(timeout=60)
             for response in contract_response["response"]:
                 if response["name"] == contract_name:
                     contract_id = str(response["id"])
@@ -193,25 +191,26 @@ class AccessContracts(object):
                     break
             else:
                 raise Exception("The contract {} isnot found".format(contract_name))
-            contract_response = self.services.delete_contractAccess2(json=condition, timeout=60)
-            if expect:
-                taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
-                self.log.info(taskStatus)
-                if (taskStatus['isError']):
-                    self.log.error("Deleting contract failed:{0}".format(taskStatus['failureReason']))
-                    raise Exception("Deleting contract failed:{0}".format(taskStatus['failureReason']))
-                self.log.info("###################################################################")
-                self.log.info("#----SUCESSFULLY deleted CONTRACT {}----#".format(contract_name))
-                self.log.info("###################################################################")
-            else:
-                taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
-                self.log.info(taskStatus)
-                if not (taskStatus['isError']):
-                    self.log.error("Deleting contract successfully although expected failure")
-                    raise Exception("Deleting contract successfully although expected failure")
-                self.log.info("#########################################################################")
-                self.log.info("#----COULDNOT DELETE CONTRACT {} AS EXPECTED----#".format(contract_name))
-                self.log.info("#########################################################################")
+            for contractid in condition["deleteList"]:
+                contract_response = self.services.delete_contractAccess(contractid, timeout=60)
+                if expect:
+                    taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
+                    self.log.info(taskStatus)
+                    if (taskStatus['isError']):
+                        self.log.error("Deleting contract failed:{0}".format(taskStatus['failureReason']))
+                        raise Exception("Deleting contract failed:{0}".format(taskStatus['failureReason']))
+                    self.log.info("###################################################################")
+                    self.log.info("#----SUCESSFULLY deleted CONTRACT {}----#".format(contract_name))
+                    self.log.info("###################################################################")
+                else:
+                    taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
+                    self.log.info(taskStatus)
+                    if not (taskStatus['isError']):
+                        self.log.error("Deleting contract successfully although expected failure")
+                        raise Exception("Deleting contract successfully although expected failure")
+                    self.log.info("#########################################################################")
+                    self.log.info("#----COULDNOT DELETE CONTRACT {} AS EXPECTED----#".format(contract_name))
+                    self.log.info("#########################################################################")
         except Exception as e:
             self.log.error("#################################################################################")
             self.log.error("#!!!FAILED TO DELETE CONTRACT {} IN DNAC. ERROR: {}----#".format(contract_name, e))
@@ -336,7 +335,7 @@ class AccessContracts(object):
             for exclusions_name in kwargs['exclusions']:
                 exclusions.append(exclusions_name)
 
-        contracts = self.get_contract_access()
+        contracts = self.get_contractAccess()
         for contract in contracts:
             try:
                 if contract['name'] not in exclusions:
