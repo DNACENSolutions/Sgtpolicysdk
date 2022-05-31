@@ -52,14 +52,13 @@ class SGTPolicy(object):
             TypeError: If the parameter types are incorrect.
         """
         check_type(session._session, DnacClientManager)
-        super(SecurityGroups, self).__init__()
+        super(SGTPolicy, self).__init__()
         self._session = session._session
         self._task = session.task
         self._sg = session._session
         self._contract = session.task
         self.log = logger
 
-    @library_wrapper
     def createSecurityGroupPolicy(self, policy_name, producer_name, consumer_name, contract_name):
         self.log.info("Start to create policy from {} to {} with contract {}".format(producer_name, consumer_name, contract_name))
         try:
@@ -118,7 +117,6 @@ class SGTPolicy(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def is_policy_exist_in_dnac(self, policy_list, expect=True):
         self.log.info("Start to check policy list in DNAC")
         try:
@@ -156,7 +154,6 @@ class SGTPolicy(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def delete_policy(self, src_sg_name, dst_sg_name):
         self.log.info("Start to delete policy from {} to {}".format(src_sg_name, dst_sg_name))
         try:
@@ -203,7 +200,6 @@ class SGTPolicy(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def get_policy_count(self):
         self.log.info("Start to count policies in DNAC")
         try:
@@ -219,7 +215,6 @@ class SGTPolicy(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def update_policy(self, src_sg_name, dst_sg_name, mode=None, new_contract_name=None):
         self.log.info("Start to update policy from {} to {} in DNAC".format(src_sg_name, dst_sg_name))
         try:

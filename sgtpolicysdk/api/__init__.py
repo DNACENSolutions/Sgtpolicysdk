@@ -34,13 +34,13 @@ from sgtpolicysdk.client_manager import DnacClientManager
 #Internal Modules From Version 2.3.3 (Guardian Release)
 from .v2_3_3.task import Task as Task_v2_3_3
 from .v2_3_3.securitygroups import SecurityGroups as SecurityGroups_v2_3_3
-from .v2_3_3.accesscontract import AccessContracts as AccessContracts_v2_3_3
+from .v2_3_3.accesscontracts import AccessContracts as AccessContracts_v2_3_3
 from .v2_3_3.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_3
 
 #Internal Modules From Version 2.3.4 (Groot Release)
 from .v2_3_4.task import Task as Task_v2_3_4
 from .v2_3_4.securitygroups import SecurityGroups as SecurityGroups_v2_3_4
-from .v2_3_4.accesscontract import AccessContracts as AccessContracts_v2_3_4
+from .v2_3_4.accesscontracts import AccessContracts as AccessContracts_v2_3_4
 from .v2_3_4.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_4
 
 class DNACenterSGTPolicyAPI(object):

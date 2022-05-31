@@ -57,12 +57,12 @@ class AccessContracts(object):
             TypeError: If the parameter types are incorrect.
         """
         check_type(session._session, DnacClientManager)
-        super(SecurityGroups, self).__init__()
+        super(AccessContracts, self).__init__()
         self._session = session._session
         self._task = session.task
         self.log = logger
 
-    @library_wrapper
+
     def createNewContract(self, condition):
         self.log.info("Start to create new contract {} in DNAC".format(condition[0]['name']))
         try:
@@ -81,7 +81,7 @@ class AccessContracts(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
+
     def getAllContractName(self):
         self.log.info("Start to get all contract names in DNAC")
         try:
@@ -102,7 +102,6 @@ class AccessContracts(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def getContractCount(self):
         self.log.info("Start to count contract in DNAC")
         try:
@@ -117,7 +116,6 @@ class AccessContracts(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def verifyContractExistInDnac(self, contract_list, expect=True):
         self.log.info("Start to check contract list in DNAC")
         try:
@@ -157,7 +155,6 @@ class AccessContracts(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def updateAccessContract(self, contract_name, condition):
         self.log.info("Start to update contract {}".format(contract_name))
         try:
@@ -185,7 +182,6 @@ class AccessContracts(object):
             self.log.error("#################################################################################")
             raise Exception(e)
 
-    @library_wrapper
     def deleteAccessContract(self, contract_name, expect=True):
         self.log.info("Start to delete contract {} in DNAC".format(contract_name))
         try:
@@ -221,9 +217,9 @@ class AccessContracts(object):
             self.log.error("#!!!FAILED TO DELETE CONTRACT {} IN DNAC. ERROR: {}----#".format(contract_name, e))
             self.log.error("#################################################################################")
             raise Exception(e)
-#=========================================Base APIs==================
-#====================================================================
-def get_contractAccess(self, **kwargs):
+    #=========================================Base APIs==================
+    #====================================================================
+    def get_contractAccess(self, **kwargs):
         """ get_contractAccess
         Args:
             kwargs (dict): additional parameters to be passed
