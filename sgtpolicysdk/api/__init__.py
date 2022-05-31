@@ -31,12 +31,17 @@ from ..config import (
 import sgtpolicysdk.environment as dnacsgtpolicy_environment
 from sgtpolicysdk.utils import check_type
 from sgtpolicysdk.client_manager import DnacClientManager
-#Internal Modules
-from .v2_3_3_3.task import Task as Task_v2_3_3_3
-from .v2_3_3_3.securitygroups import SecurityGroups as SecurityGroups_v2_3_3_3
-from .v2_3_3_3.accesscontract import AccessContracts as AccessContracts_v2_3_3_3
-from .v2_3_3_3.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_3_3
+#Internal Modules From Version 2.3.3 (Guardian Release)
+from .v2_3_3.task import Task as Task_v2_3_3
+from .v2_3_3.securitygroups import SecurityGroups as SecurityGroups_v2_3_3
+from .v2_3_3.accesscontract import AccessContracts as AccessContracts_v2_3_3
+from .v2_3_3.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_3
 
+#Internal Modules From Version 2.3.4 (Groot Release)
+from .v2_3_4.task import Task as Task_v2_3_4
+from .v2_3_4.securitygroups import SecurityGroups as SecurityGroups_v2_3_4
+from .v2_3_4.accesscontract import AccessContracts as AccessContracts_v2_3_4
+from .v2_3_4.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_4
 
 class DNACenterSGTPolicyAPI(object):
     """Cisco DNA Center API wrapper.
@@ -55,7 +60,7 @@ class DNACenterSGTPolicyAPI(object):
                  single_request_timeout=None,
                  wait_on_rate_limit=None,
                  verify=None,
-                 version='2.3.3.3',
+                 version='2.3.3',
                  api_version="v1",
                  debug=None,
                  connect=True):
@@ -149,15 +154,25 @@ class DNACenterSGTPolicyAPI(object):
         self._session = DnacClientManager(server=server,username=username, password=password,base_url=base_url)
 
         # API wrappers
-        if version == '2.3.3.3':
+        if version == '2.3.3' or version.find("2.3.3") != 1:
             self.task = \
-                Task_v2_3_3_3(self._session)
+                Task_v2_3_3(self._session)
             self.securitygroups = \
-                SecurityGroups_v2_3_3_3(self)
+                SecurityGroups_v2_3_3(self)
             self.accesscontracts = \
-                AccessContracts_v2_3_3_3(self)
+                AccessContracts_v2_3_3(self)
             self.sgtpolicy = \
-                SGTPolicy_v2_3_3_3(self)
+                SGTPolicy_v2_3_3(self)
+        if version == '2.3.4' or version.find("2.3.4") != 1:
+            self.task = \
+                Task_v2_3_4(self._session)
+            self.securitygroups = \
+                SecurityGroups_v2_3_4(self)
+            self.accesscontracts = \
+                AccessContracts_v2_3_4(self)
+            self.sgtpolicy = \
+                SGTPolicy_v2_3_4(self)
+
     @property
     def session(self):
         """The DNA Center API session."""
