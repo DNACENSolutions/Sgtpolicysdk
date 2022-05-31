@@ -51,15 +51,16 @@ class SGTPolicy(object):
         Raises:
             TypeError: If the parameter types are incorrect.
         """
-        check_type(session, DnacClientManager)
-
+        check_type(session._session, DnacClientManager)
         super(SecurityGroups, self).__init__()
-
-        self._session = session
+        self._session = session._session
+        self._task = session.task
+        self._sg = session._session
+        self._contract = session.task
         self.log = logger
 
     @library_wrapper
-    def create_new_policy(self, policy_name, producer_name, consumer_name, contract_name):
+    def createSecurityGroupPolicy(self, policy_name, producer_name, consumer_name, contract_name):
         self.log.info("Start to create policy from {} to {} with contract {}".format(producer_name, consumer_name, contract_name))
         try:
             self.log.info("get contract info")

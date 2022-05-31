@@ -31,8 +31,12 @@ from ..config import (
 import sgtpolicysdk.environment as dnacsgtpolicy_environment
 from sgtpolicysdk.utils import check_type
 from sgtpolicysdk.client_manager import DnacClientManager
-from .v2_3_3_3.securitygroups import SecurityGroups as SecurityGroups_v2_3_3_3
+#Internal Modules
 from .v2_3_3_3.task import Task as Task_v2_3_3_3
+from .v2_3_3_3.securitygroups import SecurityGroups as SecurityGroups_v2_3_3_3
+from .v2_3_3_3.accesscontract import AccessContracts as AccessContracts_v2_3_3_3
+from .v2_3_3_3.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_3_3
+
 
 class DNACenterSGTPolicyAPI(object):
     """Cisco DNA Center API wrapper.
@@ -150,6 +154,10 @@ class DNACenterSGTPolicyAPI(object):
                 Task_v2_3_3_3(self._session)
             self.securitygroups = \
                 SecurityGroups_v2_3_3_3(self)
+            self.accesscontracts = \
+                AccessContracts_v2_3_3_3(self)
+            self.sgtpolicy = \
+                SGTPolicy_v2_3_3_3(self)
     @property
     def session(self):
         """The DNA Center API session."""

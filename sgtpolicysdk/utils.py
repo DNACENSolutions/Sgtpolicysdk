@@ -40,13 +40,8 @@ from datetime import datetime, timedelta, tzinfo
 
 from past.builtins import basestring
 
-#from .exceptions import ApiError, RateLimitError
-#from .response_codes import RATE_LIMIT_RESPONSE_CODE
-
-
 EncodableFile = namedtuple('EncodableFile',
                            ['file_name', 'file_object', 'content_type'])
-
 
 def to_unicode(string):
     """Convert a string (bytes, str or unicode) to unicode."""
@@ -155,7 +150,6 @@ def check_type(o, acceptable_types, may_be_none=True):
             )
         )
         raise TypeError(error_message)
-
 
 def dict_from_items_with_values(*dictionaries, **items):
     """Creates a dict with the inputted items; pruning any that are `None`.
