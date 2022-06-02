@@ -38,7 +38,7 @@ logger = logging.getLogger("accessContracts")
 DEFAULT_VERSION = "v2"
 CONTRACT_URL_PATH = "/data/customer-facing-service/contract/access"
 CONTRACT_URL_PATH2 = "/data/cfs-intent/contract/access"
-CONTRACT_URL_SUMMARY_LPATH = "/data/customer-facing-service/summary/contract/access"
+CONTRACT_URL_SUMMARY_PATH = "/data/customer-facing-service/summary/contract/access"
 DEFAULT_HEADERS = {'Content-Type': 'application/json'}
 
 class AccessContracts(object):
@@ -64,6 +64,14 @@ class AccessContracts(object):
 
 
     def createNewContract(self, condition):
+        """
+        Create access contract
+        Args:
+            condition(dict): Parameters for creating contract
+        Raises:
+            TypeError: If the parameter types are incorrect.
+        """
+
         self.log.info("Start to create new contract {} in DNAC".format(condition[0]['name']))
         try:
             contract_response = self.services.post_contractAccess(json=condition, timeout=60)
@@ -73,7 +81,7 @@ class AccessContracts(object):
                 self.log.error("creating new contract failed:{0}".format(taskStatus['failureReason']))
                 raise Exception("creating new contract failed:{0}".format(taskStatus['failureReason']))
             self.log.info("##################################################################################")
-            self.log.info("#----SUCESSFULLY CREATED CONTRACT {}----#".format(condition[0]['name']))
+            self.log.info("#----SUCCESSFULLY CREATED CONTRACT {}----#".format(condition[0]['name']))
             self.log.info("##################################################################################")
         except Exception as e:
             self.log.error("#################################################################################")
@@ -219,7 +227,7 @@ class AccessContracts(object):
     #=========================================Base APIs==================
     #====================================================================
     def get_contractAccess(self, **kwargs):
-        """ get_contractAccess
+        """ GET contract Access details
         Args:
             kwargs (dict): additional parameters to be passed
         Returns:
@@ -227,29 +235,17 @@ class AccessContracts(object):
         Raises:
             ApiClientException: when unexpected query parameters are passed.
         """
-
-        version = kwargs.pop("version", self.VERSION)
-        resource_path = "/" + version + CONTRACT_URL_PATH
-
-        headers = self.HEADERS
-        if 'headers' in kwargs.keys():
-            headers.update(kwargs['headers'])
-
-        params = []
-
-        if "params" in kwargs:
-            for key in kwargs["params"]:
-                if key not in params:
-                    raise ApiClientException(
-                        "Unrecognized parameter: '{}' for API endpoint: '{}'"
-                        .format(key, resource_path))
-
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH
         method = 'GET'
-
-        return self._session.call_api(method, resource_path, **kwargs)
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
     def get_contractAccessSummary(self, **kwargs):
-        """ getVirtualNetwork
+        """ GET contract access summary details
 
         Args:
             kwargs (dict): additional parameters to be passed
@@ -260,31 +256,20 @@ class AccessContracts(object):
         Raises:
             ApiClientException: when unexpected query parameters are passed.
         """
-
-        version = kwargs.pop("version", self.VERSION)
-        resource_path = "/" + version + self.PATH3
-        headers = self.HEADERS
-
-        kwargs['headers'] = headers
-
-        params = ['offset','limit', 'contractSummary']
-
-        if "params" in kwargs:
-            for key in kwargs["params"]:
-                if key not in params:
-                    raise ApiClientException(
-                        "Unrecognized parameter: '{}' for API endpoint: '{}'"
-                        .format(key, resource_path))
-
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_SUMMARY_PATH
         method = 'GET'
-
-        return self._session.call_api(method, resource_path, **kwargs)
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
     def get_contractAccessById(self, instance_uuid, **kwargs):
-        """ getVirtualNetwork
+        """ GET contract access by Instace ID
 
         Args:
-            kwargs (dict): additional parameters to be passed
+            instance_uuid(str): additional parameters to be passed
 
         Returns:
             dict: response of api call
@@ -292,26 +277,36 @@ class AccessContracts(object):
         Raises:
             ApiClientException: when unexpected query parameters are passed.
         """
+        check_type(instance_uuid,basestring)
 
-
-        version = kwargs.pop("version", self.VERSION)
-        resource_path = "/" + version + self.PATH + "/" + instance_uuid
-        headers = self.HEADERS
-
-        kwargs['headers'] = headers
-
-        params = []
-
-        if "params" in kwargs:
-            for key in kwargs["params"]:
-                if key not in params:
-                    raise ApiClientException(
-                        "Unrecognized parameter: '{}' for API endpoint: '{}'"
-                        .format(key, resource_path))
-
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH+'/'+instance_uuid
         method = 'GET'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
-        return self._session.call_api(method, resource_path, **kwargs)
+    def get_contractAccessByName(self, contract_name):
+        """ get_contractAccess by name
+        Args:
+            contract_name: Provide contract access name 
+        Returns:
+            dict: response of api call
+        Raises:
+            ApiClientException: when unexpected query parameters are passed.
+        """
+        check_type(contract_name,basestring)
+
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH+'/'+contract_name
+        method = 'GET'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
     def delete_allContractAccess(self, **kwargs):
         """ Delete All non-reserved Contracts.
