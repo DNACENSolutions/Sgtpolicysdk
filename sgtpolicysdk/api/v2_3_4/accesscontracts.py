@@ -35,6 +35,10 @@ from ...utils import (
 import logging
 logger = logging.getLogger("accessContracts")
 
+DEFAULT_AC_TIMEOUT=60
+DEFAULT_TASK_COMPLETION_TIMEOUT=120
+DEFAULT_SUMMARY_TIMEOUT=240
+
 DEFAULT_VERSION = "v2"
 CONTRACT_URL_PATH = "/data/customer-facing-service/contract/access"
 CONTRACT_URL_PATH2 = "/data/cfs-intent/contract/access"
@@ -42,7 +46,7 @@ CONTRACT_URL_SUMMARY_PATH = "/data/customer-facing-service/summary/contract/acce
 DEFAULT_HEADERS = {'Content-Type': 'application/json'}
 
 class AccessContracts(object):
-    """Cisco DNA Center AccessContracts API (version: 2.3.3.0).
+    """Cisco DNA Center AccessContracts API (version: 2.3.4.0).
     Wraps the DNA Center Devices
     API and exposes the API as native Python
     methods that return native Python objects.
@@ -63,169 +67,177 @@ class AccessContracts(object):
         self.log = logger
 
 
-    def createNewContract(self, condition):
+    def createNewContract(self,contract_name,description=None,contract_data = [],**kwargs):
         """
         Create access contract
         Args:
-            condition(dict): Parameters for creating contract
+            contract_name(str): Contract name
+            description(str): Description of the contract
+            contract_data(list): 
+                [{"access'(Mandatory): "DENY", 
+                  "applicationName"(Mandatory):"wap-vcal-s",
+                  "dstNetworkIdentities"(Mandatory):[{"protocol":"UDP","ports":"9207"},
+                                          {"protocol":"TCP","ports":"9207"}], 
+                  "logging"(Mandatory): "OFF"}]
+            
         Raises:
             TypeError: If the parameter types are incorrect.
         """
-
-        self.log.info("Start to create new contract {} in DNAC".format(condition[0]['name']))
-        try:
-            contract_response = self.services.post_contractAccess(json=condition, timeout=60)
-            taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
-            self.log.info(taskStatus)
-            if (taskStatus['isError']):
-                self.log.error("creating new contract failed:{0}".format(taskStatus['failureReason']))
-                raise Exception("creating new contract failed:{0}".format(taskStatus['failureReason']))
+        check_type(contract_name,basestring)
+        check_type(description,basestring)
+        check_type(contract_data,list)
+        
+        self.log.info("Start to create new contract {} in DNAC".format(contract_name))
+        new_contract = [
+            {
+                "name" : contract_name,
+                "description" : description,
+                "type": "contract",
+                "clause": [{ "access": "PERMIT", "logging": "OFF"}],
+                "contractClassifier" : contract_data
+            }
+        ]
+        contract_response = self.post_contractAccess(json=new_contract, timeout=DEFAULT_AC_TIMEOUT)
+        taskStatus = self._task.wait_for_task_complete(contract_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("creating new contract failed:{0}".format(taskStatus['failureReason']))
+            return {'status':False, "failureReason":"Creating access contract {} failed:{}".format(taskStatus['failureReason'])}
+        else:
             self.log.info("##################################################################################")
-            self.log.info("#----SUCCESSFULLY CREATED CONTRACT {}----#".format(condition[0]['name']))
+            self.log.info("#----SUCCESSFULLY CREATED NEW CONTRACT {}----#".format(contract_name))
             self.log.info("##################################################################################")
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO CREATE NEW CONTRACT IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
-
+            return {'status':True}
 
     def getAllContractName(self):
+        """
+        GET all contract name list
+        """
         self.log.info("Start to get all contract names in DNAC")
-        try:
-            contractlist = []
-            params = {'offset': 0, 'limit': 5000, 'contractSummary': 'true'}
-            contract_response = self.get_contractAccessSummary(params=params,timeout=240)
-            contract_response_sum = contract_response["response"][0]
-
-            for response in contract_response_sum["acaContractSummary"]:
-                name = response["name"]
-                contractlist.append(name)
-            return contractlist
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO GET ALL CONTRACT NAMES IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
-
+        contractlist = []
+        params = {'offset': 0, 'limit': 5000, 'contractSummary': 'true'}
+        contract_response = self.get_contractAccessSummary(params=params,timeout=DEFAULT_SUMMARY_TIMEOUT)
+        contract_response_sum = contract_response["response"][0]
+        for response in contract_response_sum["acaContractSummary"]:
+            name = response["name"]
+            contractlist.append(name)
+        return contractlist
+            
     def getContractCount(self):
+        """
+        GET total access contract count
+        """
         self.log.info("Start to count contract in DNAC")
-        try:
-            params = {'offset': 0, 'limit': 5000, 'contractSummary': 'true'}
-            contract_response = self.get_contractAccessSummary(params=params,timeout=240)
-            contract_response_sum = contract_response["response"][0]
-            count = contract_response_sum["totalContractCount"]
-            return count
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO GET CONTRACT COUNT IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+        params = {'offset': 0, 'limit': 5000, 'contractSummary': 'true'}
+        contract_response = self.get_contractAccessSummary(params=params,timeout=DEFAULT_SUMMARY_TIMEOUT)
+        self.log.info(contract_response)
+        contract_response_sum = contract_response["response"][0]
+        count = contract_response_sum["totalContractCount"]
+        return count
 
     def verifyContractExistInDnac(self, contract_list, expect=True):
+        """
+        Verify access contract present in DNAC.
+        Args:
+            contract_list(list): Provide contract name list
+            expect(bool): True/False
+        Raises:
+            TypeError: If the parameter types are incorrect.
+        """
+        check_type(contract_list,list)
+        check_type(expect,bool)
+
         self.log.info("Start to check contract list in DNAC")
-        try:
-            # Check contract name only for now
-            # Todo check contract aces too
-            missing_list= []
-            exist_list = []
-            contractlist_aca = self.get_all_contract_name()
-            for acl in contract_list:
-                if acl in contractlist_aca:
-                    exist_list.append(acl)
-                    continue
-                else:
-                    missing_list.append(acl)
-            self.log.info("Contracts to check {}".format(contract_list))
-            self.log.info("All conotracts in DNAC {}".format(contractlist_aca))
+        missing_list= []
+        exist_list = []
+        contractlist_aca = self.getAllContractName()
+        for name in contract_list:
+            if name in contractlist_aca:
+                exist_list.append(name)
+                continue
+            else:
+                missing_list.append(name)
+        self.log.info("Contracts to check {}".format(contract_list))
+        self.log.info("All contract names in DNAC {}".format(contractlist_aca))
 
-            if expect:
-                if len(missing_list)==0:
-                    self.log.info("#####################################################")
-                    self.log.info("#----Contracts exists in DNAC {}----#".format(contract_list))
-                    self.log.info("#####################################################")
-                else:
-                    raise Exception("Some Contracts dont' exist in DNAC "
+        if expect:
+            if len(missing_list)==0:
+                self.log.info("#####################################################")
+                self.log.info("#----Contracts exists in DNAC {}----#".format(contract_list))
+                self.log.info("#####################################################")
+                return True
+            else:
+                self.log.error("Some Contracts do not exist in DNAC "
                                     "or have different information".format(missing_list))
+                return False
+        else:
+            if len(missing_list)==len(contract_list):
+                self.log.info("#####################################################")
+                self.log.info("#----Contract list don't exists in DNAC {}----#".format(contract_list))
+                self.log.info("#####################################################")
+                return True
             else:
-                if len(missing_list)==len(contract_list):
-                    self.log.info("#####################################################")
-                    self.log.info("#----Contract list don't exists in DNAC {}----#".format(contract_list))
-                    self.log.info("#####################################################")
-                else:
-                    raise Exception("Some Contracts still exist in DNAC "
+                self.log.error("Some Contracts still exist in DNAC "
                                     "or have different information".format(exist_list))
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO CHECK CONTRACT LIST IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+                return False
 
-    def updateAccessContract(self, contract_name, condition):
+    def updateAccessContract(self, contract_name,description=None,contract_data=None,clause=None,**kwargs):
+        """
+        Update access contract
+        Args:
+            contract_name(str): Contract name
+            description(str): Description of the contract
+            contract_data(list): 
+                [{"access'(Mandatory): "DENY", 
+                  "applicationName"(Mandatory):"wap-vcal-s",
+                  "dstNetworkIdentities"(Mandatory):[{"protocol":"UDP","ports":"9207"},
+                                          {"protocol":"TCP","ports":"9207"}], 
+                  "logging"(Mandatory): "OFF"}]
+            clause(list): Global parameter for contract data 
+        Raises:
+            TypeError: If the parameter types are incorrect.
+        """
+        check_type(contract_name,basestring)
+        check_type(description,basestring)
+        check_type(contract_data,list)
+        check_type(clause,list)
+
         self.log.info("Start to update contract {}".format(contract_name))
-        try:
-            self.log.info("Update contract")
-            contract_response = self.get_contractAccess(timeout=60)
-            for response in contract_response["response"]:
-                if response["name"] == contract_name:
-                    contract_id = str(response["id"])
-                    condition[0]["id"] = contract_id
-                    break
-            else:
-                raise Exception("The contract {} isnot found".format(contract_name))
-            contract_response = self.put_contractAccess(json=condition, timeout=240)
-            taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
-            self.log.info(taskStatus)
-            if (taskStatus['isError']):
-                self.log.error("Updating contract failed:{0}".format(taskStatus['failureReason']))
-                raise Exception("Updating contract failed:{0}".format(taskStatus['failureReason']))
+        self.log.info("Update contract")
+        params = {"name" : contract_name}
+        contract_response = self.get_contractAccess(params=params)
+        ac_data = {
+            "id": contract_response['response'][0]['id'],
+            "name":contract_response['response'][0]['name'],
+            "type":contract_response['response'][0]['type'],
+            "description" : contract_response['response'][0]['description'],
+            "clause": contract_response['response'][0]['clause'],
+            "contractClassifier" : contract_response['response'][0]['contractClassifier']                  
+        }
+        if contract_name:
+            ac_data["name"] = contract_name
+        if description:
+            ac_data["description"] = description
+        if contract_data:
+            ac_data["contractClassifier"] = contract_data
+        if clause:
+            ac_data["clause"] = clause
+       
+        contract_response = self.put_contractAccess(json=[ac_data], timeout=DEFAULT_SUMMARY_TIMEOUT)
+        taskStatus = self._task.wait_for_task_complete(contract_response, timeout=DEFAULT_SUMMARY_TIMEOUT)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Updating contract failed:{0}".format(taskStatus['failureReason']))
+            return {'status':False,'failureReason':"Updating contract failed:{0}".format(taskStatus['failureReason'])}
+        else:
             self.log.info("###################################################################")
             self.log.info("#----SUCESSFULLY updated CONTRACT {}----#".format(contract_name))
             self.log.info("###################################################################")
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO UPDATE CONTRACT {} IN DNAC. ERROR: {}----#".format(contract_name,e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+            return {'status':True}
 
-    def deleteAccessContract(self, contract_name, expect=True):
-        self.log.info("Start to delete contract {} in DNAC".format(contract_name))
-        try:
-            contract_response = self.get_contractAccess(timeout=60)
-            for response in contract_response["response"]:
-                if response["name"] == contract_name:
-                    contract_id = str(response["id"])
-                    condition = {"deleteList":[contract_id]}
-                    break
-            else:
-                raise Exception("The contract {} isnot found".format(contract_name))
-            for contractid in condition["deleteList"]:
-                contract_response = self.services.delete_contractAccess(contractid, timeout=60)
-                if expect:
-                    taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
-                    self.log.info(taskStatus)
-                    if (taskStatus['isError']):
-                        self.log.error("Deleting contract failed:{0}".format(taskStatus['failureReason']))
-                        raise Exception("Deleting contract failed:{0}".format(taskStatus['failureReason']))
-                    self.log.info("###################################################################")
-                    self.log.info("#----SUCESSFULLY deleted CONTRACT {}----#".format(contract_name))
-                    self.log.info("###################################################################")
-                else:
-                    taskStatus = self._task.wait_for_task_complete(contract_response, timeout=240)
-                    self.log.info(taskStatus)
-                    if not (taskStatus['isError']):
-                        self.log.error("Deleting contract successfully although expected failure")
-                        raise Exception("Deleting contract successfully although expected failure")
-                    self.log.info("#########################################################################")
-                    self.log.info("#----COULDNOT DELETE CONTRACT {} AS EXPECTED----#".format(contract_name))
-                    self.log.info("#########################################################################")
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO DELETE CONTRACT {} IN DNAC. ERROR: {}----#".format(contract_name, e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
-    #=========================================Base APIs==================
-    #====================================================================
+
+    #=========================================      Base APIs     =============================================
+    #==========================================================================================================
     def get_contractAccess(self, **kwargs):
         """ GET contract Access details
         Args:
@@ -265,7 +277,7 @@ class AccessContracts(object):
         self.log.info("Response {}".format(response))
         return response
 
-    def get_contractAccessById(self, instance_uuid, **kwargs):
+    def _get_contractAccessById(self, instance_uuid,**kwargs):
         """ GET contract access by Instace ID
 
         Args:
@@ -299,8 +311,19 @@ class AccessContracts(object):
         """
         check_type(contract_name,basestring)
 
-        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH+'/'+contract_name
-        method = 'GET'
+        params = { "name" : contract_name }
+        return self.get_contractAccess(params=params)
+
+    def post_contractAccess(self,url =None,**kwargs):
+        '''
+            Function: Create request for contract access
+            Description: POST request for creating access contract
+            INPUT: kwargs
+            OUTPUT: response
+        '''
+        if url == None:
+            url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH
+        method = 'POST'
         response = self._session.api_switch_call(method=method,
                                                       resource_path=url,
                                                       **kwargs)
@@ -308,40 +331,27 @@ class AccessContracts(object):
         self.log.info("Response {}".format(response))
         return response
 
-    def delete_allContractAccess(self, **kwargs):
-        """ Delete All non-reserved Contracts.
+    def put_contractAccess(self, **kwargs):
+        '''
+            Function: UPDATE request for contract access
+            Description: UPDATE request for updating params in access contract
+            INPUT: kwargs
+            OUTPUT: response
+        '''
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH
+        method = 'PUT'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
-        If you pass an array of names to be excluded from deletion in the kwargs called 'exclusions',
-        these will not be deleted either
-
-        Args:
-            kwargs (dict): additional parameters to be passed
-
-        Returns:
-            dict: response of api call
-
-        Raises:
-            ApiClientException: when unexpected query parameters are passed.
-        """
-        # Reserved Contract Entities
-        exclusions = ['Deny IP', 'Deny_IP_Log', 'Permit IP', 'Permit_IP_Log']
-        # If any names are specified to exclude, then don't delete them
-        if 'exclusions' in kwargs.keys() and len(kwargs['exclusions']) > 0:
-            for exclusions_name in kwargs['exclusions']:
-                exclusions.append(exclusions_name)
-
-        contracts = self.get_contractAccess()
-        for contract in contracts:
-            try:
-                if contract['name'] not in exclusions:
-                    self.delete_contractAccess(contract['id'])
-            except:
-                print('Could not delete the given contract')
-
-    def delete_contractAccess(self, instance_uuid, **kwargs):
+    def _delete_contractAccessById(self, instance_uuid, **kwargs):
         """ delete a single contract with the given instance uuid
 
         Args:
+            instance_uuid(str): ID of contract access
             kwargs (dict): additional parameters to be passed
 
         Returns:
@@ -351,62 +361,22 @@ class AccessContracts(object):
 
             ApiClientException: when unexpected query parameters are passed.
         """
+        check_type(instance_uuid,basestring)
 
-        version = kwargs.pop("version", self.VERSION)
-        resource_path = "/" + version + self.PATH + "/" + instance_uuid
-        headers = self.HEADERS
-
-        kwargs['headers'] = headers
-
-        params = []
-
-        if "params" in kwargs:
-            for key in kwargs["params"]:
-                if key not in params:
-                    raise ApiClientException(
-                        "Unrecognized parameter: '{}' for API endpoint: '{}'"
-                        .format(key, resource_path))
-
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH+'/'+instance_uuid
         method = 'DELETE'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
-        return self._session.call_api(method, resource_path, **kwargs)
-
-    def post_contractAccess(self, **kwargs):
-        """ getVirtualNetwork
-
-        Args:
-            kwargs (dict): additional parameters to be passed
-
-        Returns:
-            dict: response of api call
-
-        Raises:
-            ApiClientException: when unexpected query parameters are passed.
-        """
-
-        version = kwargs.pop("version", self.VERSION)
-        resource_path = "/" + version + self.PATH + ""
-        headers = self.HEADERS
-
-        kwargs['headers'] = headers
-
-        params = []
-
-        if "params" in kwargs:
-            for key in kwargs["params"]:
-                if key not in params:
-                    raise ApiClientException(
-                        "Unrecognized parameter: '{}' for API endpoint: '{}'"
-                        .format(key, resource_path))
-
-        method = 'POST'
-
-        return self._session.call_api(method, resource_path, **kwargs)
-
-    def put_contractAccess(self, **kwargs):
-        """ getVirtualNetwork
+    def delete_contractAccessByName(self, contract_name, **kwargs):
+        """ delete a single contract with the given instance uuid
 
         Args:
+            contract_name(str): Access Contract name
             kwargs (dict): additional parameters to be passed
 
         Returns:
@@ -416,22 +386,43 @@ class AccessContracts(object):
 
             ApiClientException: when unexpected query parameters are passed.
         """
+        check_type(contract_name,basestring)
 
-        version = kwargs.pop("version", self.VERSION)
-        resource_path = "/" + version + self.PATH + ""
-        headers = self.HEADERS
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH2
+        contract_response = self.get_contractAccessSummary()
+        delete_list = [ac['id'] for i,ac in enumerate((contract_response['response'][0]['acaContractSummary'])) if ac['name'] == contract_name]
+        if len(delete_list) == 0:
+            self.log.error("No contract name exist to delete it")
+            return {"status" : False}
+        else:
+            self.log.info("Contract exist for deletion") 
+            ac_data = {
+                "deleteList": delete_list,   
+            }
+        
+        delete_response = self.post_contractAccess(url=url,json=ac_data)
+        self.log.debug(delete_response)
+        taskStatus = self._task.wait_for_task_complete(delete_response)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Deleting access contract failed:{0}".format(taskStatus['failureReason']))
+            return {"status" : False, 'failureReason':'Deleting access contract {} failed:{}'.format(contract_name,taskStatus['failureReason'])}
+        self.log.info("#----SUCCESSFULLY DELETED access contract {}----#".format(contract_name))
+        return { "status" : True }
+       
+    def put_acaControllerServiceDeploy(self, **kwargs):
+        '''
+            Function: put_acaControllerServiceDeploy
+            Description: Update request for Deploy now action
+            INPUT: kwargs
+            OUTPUT: Returns response
 
-        kwargs['headers'] = headers
-
-        params = []
-
-        if "params" in kwargs:
-            for key in kwargs["params"]:
-                if key not in params:
-                    raise ApiClientException(
-                        "Unrecognized parameter: '{}' for API endpoint: '{}'"
-                        .format(key, resource_path))
-
+        '''
+        url = ACACONTROLLERPATH + "/deploy"
         method = 'PUT'
-
-        return self._session.call_api(method, resource_path, **kwargs)
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response 

@@ -151,7 +151,7 @@ class SecurityGroups(object):
             Function: addSecurityGroupToVirtualNetwork
             INPUTs:
                 virtualNetworks : List of Virtual Network Names
-                sg_name : Security Group Name
+                name : Security Group Name
             OUTPUT:
                 When Success: {"status":True, "failureReason":""}
                 {"status":False, "failureReason":"<Failure expanation>"
