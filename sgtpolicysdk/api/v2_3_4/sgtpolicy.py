@@ -23,7 +23,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from builtins import *
 
 from past.builtins import basestring
-
 from ...client_manager import DnacClientManager
 from ...utils import (
     apply_path_params,
@@ -34,6 +33,15 @@ from ...utils import (
 
 import logging
 logger = logging.getLogger("SecurityGroupsPolicy")
+
+DEFAULT_TIMEOUT=60
+DEFAULT_TASK_COMPLETION_TIMEOUT=120
+DEFAULT_SUMMARY_TIMEOUT=240
+
+DEFAULT_VERSION = "v2"
+POLICY_PATH = "/data/customer-facing-service/policy/access"
+POLICY_SUMMARY_PATH = "/data/customer-facing-service/summary/policy/access"
+SCALABLE_GROUP_SUMMARY_PATH = "/data/customer-facing-service/summary/scalablegroup/access"
 
 class SGTPolicy(object):
     """Cisco DNA Center Security Group Based Policy API (version: 2.3.3.0).
@@ -55,165 +63,226 @@ class SGTPolicy(object):
         super(SGTPolicy, self).__init__()
         self._session = session._session
         self._task = session.task
-        self._sg = session._session
-        self._contract = session.task
+        self._contract = session.accesscontracts
+        self._securitygroup = session.securitygroups
         self.log = logger
 
     def createSecurityGroupPolicy(self, policy_name, producer_name, consumer_name, contract_name):
+        """
+        Create policy for group based access control
+        Args:
+            policy_name(str) : Policy name
+            producer_name(str): Policy source name
+            consumer_name(str): Policy Destination name
+            contract_name(str): contract name to be associated to policy
+        Returns:
+            dict: response of api call
+        Raises:
+            ApiClientException: when unexpected query parameters are passed.        
+        """
+        check_type(policy_name,basestring)
+        check_type(producer_name,basestring)
+        check_type(consumer_name,basestring)
+        check_type(contract_name,basestring)
+        
         self.log.info("Start to create policy from {} to {} with contract {}".format(producer_name, consumer_name, contract_name))
-        try:
-            self.log.info("get contract info")
+        self.log.info("get contract info")
+        contract_response = self._contract.get_contractAccessByName(contract_name)
+        for response in contract_response["response"]:
+            if response["name"] == contract_name:
+                contract_id = str(response["id"])
 
-            contract_response = self._contract.get_contractAccess(timeout=60)
-            for response in contract_response["response"]:
-                if response["name"] == contract_name:
-                    contract_id = str(response["id"])
+        sg_response = self._securitygroup.get_securityGroup()
+        for SG in sg_response["response"]:
+            if SG["name"] == producer_name:
+                producer_id = str(SG["id"])
+            if SG["name"] == consumer_name:
+                consumer_id = str(SG["id"])
 
-            sg_response = self.services.get_scalableGroup(timeout=60)
+        access_policy_response = self.get_policyaccess()
+        policy_scope_id = access_policy_response["response"][0]["policyScope"]
 
-            for SG in sg_response["response"]:
-                if SG["name"] == producer_name:
-                    producer_id = str(SG["id"])
-                if SG["name"] == consumer_name:
-                    consumer_id = str(SG["id"])
+        self.log.info("Inside create new policy the Idref of the contract is: {0}".format(contract_id))
 
-            access_policy_response = self.services.get_policyaccess(timeout=60)
-            for policyscope in access_policy_response["response"]:
-                policy_scope_id = str(policyscope["policyScope"])
-
-            self.log.info("Inside create new policy the Idref of the contract is: {0}".format(contract_id))
-
-            condition = [{
-                "isEnabled": "true",
-                "contract": {
-                    "idRef": contract_id
-                },
-                "producer": {
-                    "scalableGroup": [{
-                        "idRef": producer_id
-                        }]
-                },
-                "consumer": {
-                    "scalableGroup": [{
-                        "idRef": consumer_id
+        sgtpolicy_data = [{
+            "isEnabled": "true",
+            "contract": {
+                "idRef": contract_id
+            },
+            "producer": {
+                "scalableGroup": [{
+                    "idRef": producer_id
                     }]
-                },
-                "policyScope": policy_scope_id,
-                "priority": 65535,
-                "name": policy_name
+            },
+            "consumer": {
+                "scalableGroup": [{
+                    "idRef": consumer_id
                 }]
-            policy_response = self.services.post_policy_access(json=condition, timeout=60)
-            taskStatus = self.services.wait_for_task_complete(policy_response, timeout=240)
-            self.log.info(taskStatus)
-            if (taskStatus['isError']):
-                self.log.error("Creating policy failed:{0}".format(taskStatus['failureReason']))
-                raise Exception("Creating policy failed:{0}".format(taskStatus['failureReason']))
-            self.log.info("######################################################################################################")
-            self.log.info("#----SUCESSFULLY CREATED TRUSTSEC POLICY from {} to {} with contract {}----#".format(producer_name, consumer_name, contract_name))
-            self.log.info("######################################################################################################")
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO CREATE NEW POLICY from {} to {} with contract {}. ERROR {}----#".format(producer_name, consumer_name, contract_name, e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
-
+            },
+            "policyScope": policy_scope_id,
+            "priority": 65535,
+            "name": policy_name
+            }]
+        policy_response = self.post_policyaccess(json=sgtpolicy_data)
+        taskStatus = self._task.wait_for_task_complete(policy_response, timeout=240)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Creating policy failed:{0}".format(taskStatus['failureReason']))
+            return {'status':False, "failureReason":"Creating Policy {} failed:{}".format(taskStatus['failureReason'])}
+        self.log.info("######################################################################################################")
+        self.log.info("#----SUCCESSFULLY CREATED TRUSTSEC POLICY from {} to {} with contract {}----#".format(producer_name, consumer_name, contract_name))
+        self.log.info("######################################################################################################")
+        return {'status':True}
+       
     def is_policy_exist_in_dnac(self, policy_list, expect=True):
-        self.log.info("Start to check policy list in DNAC")
-        try:
-            policylist_aca = self.get_all_policy()
+        """
+        Find policy list exist in DNAC
+        Args:
+            policy_list(str): Policy nmae list
+            expect(bool): True or False
+        Raises:
+            TypeError: If the parameter types are incorrect.
+        """
+        check_type(policy_list,list)
+        check_type(expect,bool)        
 
-            self.log.info("Policy list to check: {}".format(policy_list))
-            self.log.info("Policy list in ACA DNAC: {}".format(policylist_aca))
-            missing_list = []
-            exist_list = []
-            for policy in policy_list:
-                if policy in policylist_aca:
-                    exist_list.append(policy)
-                    continue
-                else:
-                    missing_list.append(policy)
-            if expect:
-                if len(missing_list)==0:
-                    self.log.info("####################################################")
-                    self.log.info("#----Policies exists in DNAC as expected {} ----#".format(policy_list))
-                    self.log.info("####################################################")
-                else:
-                    raise Exception("Some Policies don't exist in ACA DNAC"
-                                    "or have different information: {}".format(missing_list))
+        self.log.info("Start to check policy list in DNAC")
+        policylist_aca = self.get_all_policy()
+
+        self.log.info("Policy list to check: {}".format(policy_list))
+        self.log.info("Policy list in ACA DNAC: {}".format(policylist_aca))
+        missing_list = []
+        exist_list = []
+        for policy in policy_list:
+            if policy in policylist_aca:
+                exist_list.append(policy)
+                continue
             else:
-                if len(missing_list)==len(policy_list):
-                    self.log.info("#####################################################")
-                    self.log.info("#----Policy list don't exists in DNAC as expected {}----#".format(policy_list))
-                    self.log.info("#####################################################")
-                else:
-                    raise Exception("Some Contracts still exist in DNAC "
-                                    "or have different information".format(exist_list))
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO CHECK POLICY IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+                missing_list.append(policy)
+        if expect:
+            if len(missing_list)==0:
+                self.log.info("####################################################")
+                self.log.info("#----Policies exists in DNAC as expected {} ----#".format(policy_list))
+                self.log.info("####################################################")
+                return {'status':True}
+            else:
+                self.log.error("Some Policies don't exist in ACA DNAC"
+                                "or have different information: {}".format(missing_list))
+                return {'status':False}
+        else:
+            if len(missing_list)==len(policy_list):
+                self.log.info("#####################################################")
+                self.log.info("#----Policy list don't exists in DNAC as expected {}----#".format(policy_list))
+                self.log.info("#####################################################")
+                return {'status':True}
+            else:
+                self.log.error("Some Contracts still exist in DNAC "
+                                "or have different information".format(exist_list))
+                return {'status':False}
 
     def delete_policy(self, src_sg_name, dst_sg_name):
+        """
+        Delete Policy
+        Args:
+            src_sg_name(str): Source security group name
+            dst_sg_name(str): Destination security group name
+        Raises:
+            TypeError: If the parameter types are incorrect.        
+        """
+        check_type(src_sg_name,basestring)
+        check_type(dst_sg_name,basestring)
+
         self.log.info("Start to delete policy from {} to {}".format(src_sg_name, dst_sg_name))
-        try:
-            delete_id = ""
-            src_sg_id = ""
-            dst_sg_id = ""
-            sg_response = self.services.get_scalableGroup(timeout=60)
+        delete_id = ""
+        src_sg_id = ""
+        dst_sg_id = ""
+        sg_response = self._securitygroup.get_securityGroup()
+        for sg in sg_response["response"]:
+            if(sg["name"] == src_sg_name):
+                src_sg_id = str(sg["id"])
+                print(src_sg_id)
+            if(sg["name"] == dst_sg_name):
+                dst_sg_id = str(sg["id"])
+                print(dst_sg_id)
 
-            for sg in sg_response["response"]:
-                if(sg["name"] == src_sg_name):
-                    src_sg_id = str(sg["id"])
-                    print(src_sg_id)
-                if(sg["name"] == dst_sg_name):
-                    dst_sg_id = str(sg["id"])
-                    print(dst_sg_id)
+        policy_response = self.get_policyaccess()
+        # print(json.dumps(policy_response, sort_keys=True, indent=4, separators=(',', ': ')))
+        if src_sg_id == '' or dst_sg_id == '' :
+            self.log.error("The source or destination security group is not found")
+        for aca in policy_response["response"]:
+            if dst_sg_id in aca["consumer"]["scalableGroup"][0]["idRef"] and src_sg_id in aca["producer"]["scalableGroup"][0]["idRef"]:
+                delete_id = aca["id"]
+                print(delete_id)
 
-            policy_response = self.services.get_policyaccess(timeout=60)
-            # print(json.dumps(policy_response, sort_keys=True, indent=4, separators=(',', ': ')))
-            if src_sg_id == '' or dst_sg_id == '' :
-                raise Exception("The source or destination sg arenot found")
-            for aca in policy_response["response"]:
-                if dst_sg_id in aca["consumer"]["scalableGroup"][0]["idRef"] and src_sg_id in aca["producer"]["scalableGroup"][0]["idRef"]:
-                    delete_id = aca["id"]
-                    print(delete_id)
+        if delete_id == '':
+            self.log.error("The policy isnot found")
+            return {'status':False}
 
-            if delete_id == '':
-                raise Exception("The policy isnot found")
+        delete_response = self.delete_policy_access_by_id(delete_id)
+        self.log.info(delete_response)
+        taskStatus = self._task.wait_for_task_complete(delete_response, timeout=240)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Deleting policy failed:{0}".format(taskStatus['failureReason']))
+            return {'status':False, "failureReason":"Deleting Policy {} failed:{}".format(taskStatus['failureReason'])}
+        self.log.info("###############################################################################################")
+        self.log.info("#----SUCESSFULLY DELETED TRUSTSEC POLICY from {} to {}----#".format(src_sg_name, dst_sg_name))
+        self.log.info("###############################################################################################")
+        return {'status':True}
 
+    def get_policyaccess(self,**kwargs):
+        """ GET Policy access details
 
-            delete_response = self.services.delete_policy_access_by_id(delete_id, timeout=60)
-            self.log.info(delete_response)
-            taskStatus = self.services.wait_for_task_complete(delete_response, timeout=240)
-            self.log.info(taskStatus)
-            if (taskStatus['isError']):
-                self.log.error("Deleting policy failed:{0}".format(taskStatus['failureReason']))
-                raise Exception("Deleting policy failed:{0}".format(taskStatus['failureReason']))
+        Args:
+            kwargs (dict): additional parameters to be passed
 
-            self.log.info("###############################################################################################")
-            self.log.info("#----SUCESSFULLY DELETED TRUSTSEC POLICY from {} to {}----#".format(src_sg_name, dst_sg_name))
-            self.log.info("###############################################################################################")
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO DELETE POLICY from {} to {} IN DNAC. ERROR: {}----#".format(src_sg_name, dst_sg_name, e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+        Returns:
+            dict: response of api call
 
+        Raises:
+            ApiClientException: when unexpected query parameters are passed.
+        """
+        url = '/'+ DEFAULT_VERSION + POLICY_PATH
+        method = 'GET'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
+
+    def get_policyaccess_summary(self,**kwargs):
+        """ GET Policy access summary details
+
+        Args:
+            kwargs (dict): additional parameters to be passed
+
+        Returns:
+            dict: response of api call
+
+        Raises:
+            ApiClientException: when unexpected query parameters are passed.
+        """
+        url = '/'+ DEFAULT_VERSION + POLICY_SUMMARY_PATH
+        method = 'GET'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
+        
     def get_policy_count(self):
+        """
+        Get Total policy count
+        """
         self.log.info("Start to count policies in DNAC")
-        try:
-            params = {'gbpSummary': 'true'}
-            policy_response = self.services.get_policyaccess_summary(params=params, timeout=240)
-            policy_response_summary = policy_response["response"][0]
-            count = len(policy_response_summary["acaGBPSummary"])
-            self.log.info("##Policies count on DNAC {}".format(count))
-            return count
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO GET POLICY COUNT IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+        params = {'gbpSummary': 'true'}
+        policy_response = self.get_policyaccess_summary(params=params, timeout=240)
+        policy_response_summary = policy_response["response"][0]
+        count = len(policy_response_summary["acaGBPSummary"])
+        self.log.info("##Policies count on DNAC {}".format(count))
+        return count
 
     def update_policy(self, src_sg_name, dst_sg_name, mode=None, new_contract_name=None):
         self.log.info("Start to update policy from {} to {} in DNAC".format(src_sg_name, dst_sg_name))
@@ -290,46 +359,58 @@ class SGTPolicy(object):
 
 
     def get_all_policy(self):
+        """
+        GET all Policy name list
+        """
         self.log.info("Start to get all policies in DNAC")
-        try:
-            policylist = []
+        policylist = []
+        params = {'gbpSummary': 'true'}
+        policy_response = self.get_policyaccess_summary(params=params)
+        policy_response_summary = policy_response["response"][0]
 
-            # access_policy_response = self.services.get_policyaccess(timeout=60)
-            params = {'gbpSummary': 'true'}
-            policy_response = self.services.get_policyaccess_summary(params=params)
-            policy_response_summary = policy_response["response"][0]
+        for policy in policy_response_summary["acaGBPSummary"]:
+            producer_name = policy["producerName"]
+            consumer_name = policy["consumerName"]
+            contract_name = policy["contractName"]
+            name= producer_name + "-" + consumer_name
+            policy_dict = {"name":name, "contract":contract_name}
+            policylist.append(policy_dict)
+        return policylist
 
-            # response_sg = self.services.get_scalableGroup(timeout=60)
-            # params = {'offset': 0, 'limit': 5000, 'scalableGroupSummary': 'true'}
-            # response_sg = self.services.get_scalableGroup_summary(params=params)
-            # response_sg_sum = response_sg["response"][0]
+    def post_policyaccess(self, **kwargs):
+        '''
+            Function: post request for policy access
+            Description: POST request for policy access
+            INPUT: kwargs
+            OUTPUT: response
+        '''
+        url = '/'+ DEFAULT_VERSION + POLICY_PATH
+        method = 'POST'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
 
-            for policy in policy_response_summary["acaGBPSummary"]:
-                # consumer_id = policy["consumer"]["scalableGroup"][0]["idRef"]
-                # producer_id = policy["producer"]["scalableGroup"][0]["idRef"]
-                # producer_name = ""
-                # consumer_name = ""
-                # for sg in response_sg_sum['acaScalableGroupSummary']:
-                #     if sg["id"]==consumer_id:
-                #         consumer_name = sg["name"]
-                #     if sg["id"]==producer_id:
-                #         producer_name = sg["name"]
-                #     if consumer_name != "" and producer_name != "":
-                #         break
-                # name= producer_name + "-" + consumer_name
-                #
-                # contract_id = policy["contract"]["idRef"]
-                # contract_res = self.services.get_contract_access_by_id(instance_uuid=contract_id)
-                # contract_name = contract_res["response"][0]["name"]
-                producer_name = policy["producerName"]
-                consumer_name = policy["consumerName"]
-                contract_name = policy["contractName"]
-                name= producer_name + "-" + consumer_name
-                policy_dict = {"name":name, "contract":contract_name}
-                policylist.append(policy_dict)
-            return policylist
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO GET ALL POLICIES IN DNAC. ERROR: {}----#".format(e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
+    def put_policyaccess(self,**kwargs):
+        """ Update request for Policy access
+
+        Args:
+            kwargs (dict): additional parameters to be passed
+
+        Returns:
+            dict: response of api call
+
+        Raises:
+            ApiClientException: when unexpected query parameters are passed.
+        """
+        url = '/'+ DEFAULT_VERSION + POLICY_PATH
+        method = 'PUT'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
+
