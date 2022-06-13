@@ -42,6 +42,7 @@ DEFAULT_VERSION = "v2"
 POLICY_PATH = "/data/customer-facing-service/policy/access"
 POLICY_SUMMARY_PATH = "/data/customer-facing-service/summary/policy/access"
 SCALABLE_GROUP_SUMMARY_PATH = "/data/customer-facing-service/summary/scalablegroup/access"
+ACACONTROLLERPATH = "/v1/aca-controller-service"
 
 class SGTPolicy(object):
     """Cisco DNA Center Security Group Based Policy API (version: 2.3.3.0).
@@ -124,7 +125,7 @@ class SGTPolicy(object):
             "name": policy_name
             }]
         policy_response = self.post_policyaccess(json=sgtpolicy_data)
-        taskStatus = self._task.wait_for_task_complete(policy_response, timeout=240)
+        taskStatus = self._task.wait_for_task_complete(policy_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
         self.log.info(taskStatus)
         if (taskStatus['isError']):
             self.log.error("Creating policy failed:{0}".format(taskStatus['failureReason']))
@@ -200,33 +201,32 @@ class SGTPolicy(object):
         for sg in sg_response["response"]:
             if(sg["name"] == src_sg_name):
                 src_sg_id = str(sg["id"])
-                print(src_sg_id)
+                self.log.info("Source name ref id {}".format(src_sg_id))
             if(sg["name"] == dst_sg_name):
                 dst_sg_id = str(sg["id"])
-                print(dst_sg_id)
+                self.log.info("Destination name ref id {}".format(dst_sg_id))
 
         policy_response = self.get_policyaccess()
-        # print(json.dumps(policy_response, sort_keys=True, indent=4, separators=(',', ': ')))
         if src_sg_id == '' or dst_sg_id == '' :
             self.log.error("The source or destination security group is not found")
         for aca in policy_response["response"]:
             if dst_sg_id in aca["consumer"]["scalableGroup"][0]["idRef"] and src_sg_id in aca["producer"]["scalableGroup"][0]["idRef"]:
                 delete_id = aca["id"]
-                print(delete_id)
+                self.log.info("Delete ref id {}".format(delete_id))
 
         if delete_id == '':
             self.log.error("The policy isnot found")
             return {'status':False}
 
-        delete_response = self.delete_policy_access_by_id(delete_id)
+        delete_response = self.delete_policyaccessById(delete_id)
         self.log.info(delete_response)
-        taskStatus = self._task.wait_for_task_complete(delete_response, timeout=240)
+        taskStatus = self._task.wait_for_task_complete(delete_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
         self.log.info(taskStatus)
         if (taskStatus['isError']):
             self.log.error("Deleting policy failed:{0}".format(taskStatus['failureReason']))
             return {'status':False, "failureReason":"Deleting Policy {} failed:{}".format(taskStatus['failureReason'])}
         self.log.info("###############################################################################################")
-        self.log.info("#----SUCESSFULLY DELETED TRUSTSEC POLICY from {} to {}----#".format(src_sg_name, dst_sg_name))
+        self.log.info("#----SUCCESSFULLY DELETED TRUSTSEC POLICY from {} to {}----#".format(src_sg_name, dst_sg_name))
         self.log.info("###############################################################################################")
         return {'status':True}
 
@@ -285,51 +285,61 @@ class SGTPolicy(object):
         return count
 
     def update_policy(self, src_sg_name, dst_sg_name, mode=None, new_contract_name=None):
+        """
+        Update policy details
+        Args:
+            src_sg_name(str): Source security group name
+            dst_sg_name(str): Destination security group name
+            mode(str): Mode of policy
+            new_contract_name(str): contract name to be updated
+        Raises:
+            TypeError: If the parameter types are incorrect.        
+        """
+        check_type(src_sg_name,basestring)
+        check_type(dst_sg_name,basestring)
+        check_type(mode,basestring)
+        check_type(new_contract_name,basestring)
+        
         self.log.info("Start to update policy from {} to {} in DNAC".format(src_sg_name, dst_sg_name))
-        try:
-            policy_id = ""
-            contract_id = ""
+        policy_id = ""
+        contract_id = ""
 
-            sg_response = self.services.get_scalableGroup(timeout=60)
+        sg_response = self._securitygroup.get_securityGroup()
+        for sg in sg_response["response"]:
+            if(sg["name"] == src_sg_name):
+                src_sg_id = str(sg["id"])
+                self.log.info(src_sg_id)
+            if(sg["name"] == dst_sg_name):
+                dst_sg_id = str(sg["id"])
+                self.log.info(dst_sg_id)
+        policy_response = self.get_policyaccess()
+        for aca in policy_response["response"]:
+            if dst_sg_id in aca["consumer"]["scalableGroup"][0]["idRef"] and src_sg_id in aca["producer"]["scalableGroup"][0]["idRef"]:
+                policy_id = aca["id"]
+                policy_scope = aca['policyScope']
+                policy_name = aca['name']
+                policy_status = aca['policyStatus']
+                contract_id = aca['contract']['idRef']
+                policy_priority = aca['priority']
+                self.log.info(policy_id)
+                break
+        if policy_id == '':
+            self.log.error('Policy isnot found')
+            return {"status": False}
 
-            for sg in sg_response["response"]:
-                if(sg["name"] == src_sg_name):
-                    src_sg_id = str(sg["id"])
-                    self.log.info(src_sg_id)
-                if(sg["name"] == dst_sg_name):
-                    dst_sg_id = str(sg["id"])
-                    self.log.info(dst_sg_id)
+        if mode is not None:
+            policy_status = mode
 
-            policy_response = self.services.get_policyaccess(timeout=60)
-            self.log.info(json.dumps(policy_response, sort_keys=True, indent=4, separators=(',', ': ')))
-            for aca in policy_response["response"]:
-                if dst_sg_id in aca["consumer"]["scalableGroup"][0]["idRef"] and src_sg_id in aca["producer"]["scalableGroup"][0]["idRef"]:
-                    policy_id = aca["id"]
-                    policy_scope = aca['policyScope']
-                    policy_name = aca['name']
-                    policy_status = aca['policyStatus']
-                    contract_id = aca['contract']['idRef']
-                    policy_priority = aca['priority']
-                    self.log.info(policy_id)
+        if new_contract_name is not None:
+            contract_response = self._contract.get_contractAccess()
+            for contract in contract_response["response"]:
+                if contract["name"] == new_contract_name:
+                    contract_id = str(contract["id"])
                     break
-
-            if policy_id == '':
-                raise Exception('Policy isnot found')
-
-            if mode is not None:
-                policy_status = mode
-
-            if new_contract_name is not None:
-                contract_response = self.services.get_contract_access(timeout=60)
-                for contract in contract_response["response"]:
-                    if contract["name"] == new_contract_name:
-                        contract_id = str(contract["id"])
-                        break
-                if contract_id == '':
-                    raise Exception('The contract is not found')
-
-
-            condition = [{
+            if contract_id == '':
+                self.log.error('The contract is not found')
+                return {"status": False}
+        sgtpolicy_data = [{
                 "id": policy_id,
                 "policyScope": policy_scope,
                 "priority": policy_priority,
@@ -340,23 +350,17 @@ class SGTPolicy(object):
                 "consumer": {"scalableGroup": [{"idRef":dst_sg_id}]}
                 }]
 
-
-            policy_response = self.services.put_policy_access(json=condition, timeout=60)
-            taskStatus = self.services.wait_for_task_complete(policy_response, timeout=240)
-            self.log.info(taskStatus)
-            if (taskStatus['isError']):
-                self.log.error("Updating policy failed:{0}".format(taskStatus['failureReason']))
-                raise Exception("Updating policy failed:{0}".format(taskStatus['failureReason']))
-
-            self.log.info("###############################################################################################")
-            self.log.info("#----SUCESSFULLY UPDATED TRUSTSEC POLICY for {} to {}----#".format(src_sg_name, dst_sg_name))
-            self.log.info("###############################################################################################")
-        except Exception as e:
-            self.log.error("#################################################################################")
-            self.log.error("#!!!FAILED TO UPDATE POLICY FROM {} TO {} IN DNAC. ERROR: {}----#".format(src_sg_name, dst_sg_name, e))
-            self.log.error("#################################################################################")
-            raise Exception(e)
-
+        policy_response = self.put_policyaccess(json=sgtpolicy_data)
+        taskStatus = self._task.wait_for_task_complete(policy_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Updating policy failed:{0}".format(taskStatus['failureReason']))
+            return {'status':False,
+                    'failureReason':'Failed in updating Policy with reason: {}'.format(taskStatus['failureReason'])}
+        self.log.info("###############################################################################################")
+        self.log.info("#----SUCCESSFULLY UPDATED TRUSTSEC POLICY for {} to {}----#".format(src_sg_name, dst_sg_name))
+        self.log.info("###############################################################################################")
+        return {"status": True}
 
     def get_all_policy(self):
         """
@@ -413,4 +417,44 @@ class SGTPolicy(object):
         self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
         self.log.info("Response {}".format(response))
         return response
+        
+    def delete_policyaccessById(self,ref_id,**kwargs):
+        """ 
+        Delete request for Policy access
+
+        Args:
+            kwargs (dict): additional parameters to be passed
+
+        Returns:
+            dict: response of api call
+
+        Raises:
+            ApiClientException: when unexpected query parameters are passed.
+        """
+        url = '/'+ DEFAULT_VERSION + POLICY_PATH+'/'+ref_id
+        method = 'DELETE'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
+
+    def put_acaControllerServiceDeploy(self, **kwargs):
+        '''
+            Function: put_acaControllerServiceDeploy
+            Description: Update request for Deploy now action
+            INPUT: kwargs
+            OUTPUT: Returns response
+
+        '''
+        url = ACACONTROLLERPATH + "/deploy"
+        method = 'PUT'
+        response = self._session.api_switch_call(method=method,
+                                                      resource_path=url,
+                                                      **kwargs)
+        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
+        self.log.info("Response {}".format(response))
+        return response
+
 
