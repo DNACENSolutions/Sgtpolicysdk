@@ -131,6 +131,7 @@ class DNACenterSGTPolicyAPI(object):
             verify = dnacsgtpolicy_environment.get_env_verify() or DEFAULT_VERIFY
 
         version = version or dnacsgtpolicy_environment.get_env_version() or DEFAULT_VERSION
+        self._version = version
 
         if debug is None:
             debug = dnacsgtpolicy_environment.get_env_debug() or DEFAULT_DEBUG
@@ -154,7 +155,7 @@ class DNACenterSGTPolicyAPI(object):
         self._session = DnacClientManager(server=server,username=username, password=password,base_url=base_url)
 
         # API wrappers
-        if version == '2.3.3' or version.find("2.3.3") != 1:
+        if version == '2.3.3' or version.find("2.3.3") != -1:
             self.task = \
                 Task_v2_3_3(self._session)
             self.securitygroups = \
@@ -163,7 +164,7 @@ class DNACenterSGTPolicyAPI(object):
                 AccessContracts_v2_3_3(self)
             self.sgtpolicy = \
                 SGTPolicy_v2_3_3(self)
-        if version == '2.3.4' or version.find("2.3.4") != 1:
+        elif version == '2.3.4' or version.find("2.3.4") != -1:
             self.task = \
                 Task_v2_3_4(self._session)
             self.securitygroups = \
@@ -172,6 +173,9 @@ class DNACenterSGTPolicyAPI(object):
                 AccessContracts_v2_3_4(self)
             self.sgtpolicy = \
                 SGTPolicy_v2_3_4(self)
+        else:
+            print("No Matching version provided.")
+            return False
 
     @property
     def session(self):
@@ -201,7 +205,7 @@ class DNACenterSGTPolicyAPI(object):
     @property
     def version(self):
         """The API version of DNA Center."""
-        return self._session._version
+        return self._version
 
     @verify.setter
     def verify(self, value):
