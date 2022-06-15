@@ -79,6 +79,7 @@ Documentation
 -------------
 
 Security Group Functions Available:
+===================================
 
 1. createSecurityGroup(sgName, sgTag, sgDescription="", virtualNetworks=[])
         '''
@@ -166,8 +167,9 @@ Security Group Functions Available:
                 count: Total SGT count
         '''
  .. code-block:: bash
-        >>> dnac.securitygroups.getSecurityGroupCount()
-        {'status': True, 'count': 36}
+    >>> dnac.securitygroups.getSecurityGroupCount()
+    {'status': True, 'count': 36}
+
 8. deleteSecurityGroupByName(name):
         '''
             deleteSecurityGroupByName
@@ -177,7 +179,7 @@ Security Group Functions Available:
                 status:True 
                 status:False, failureReason: <reason> 
         '''
-        
+
  9. deploy(verifyDone=False, verifyNoRequest=False, retries=1, timeout=DEFAULT_SGT_TIMEOUT):
         '''
             Function: deployAndVerifySecurityGroups
@@ -188,7 +190,7 @@ Security Group Functions Available:
                 For Success: {'status':True}
                 For Faillure: {'status':False, 'failureReason': "<reason string>"}
         '''
-        
+
  10. push(verifyDone=False, verifyNoRequest=False, timeout=DEFAULT_SGT_TIMEOUT):
         '''
             Function: pushAndVerifySecurityGroups
@@ -209,6 +211,38 @@ Security Group Functions Available:
    .. code-block:: bash
       >>> dnac.securitygroups.get_securityGroup_summary()
     {'id': 'cd1a5a24-7f83-4a5b-a358-f08d97dc2a78', 'response': [{'instanceId': 0, 'instanceVersion': 0, 'totalSGCount': 36, 'acaScalableGroupSummary': []}
+
+AccessContract Functions Available:
+===================================
+1. createNewContract()
+2. dnac.accesscontracts.get_contractAccessSummary()
+3. dnac.accesscontracts.put_acaControllerServiceDeploy()
+4. dnac.accesscontracts.delete_contractAccessByName()
+5. dnac.accesscontracts.getAllContractName()
+6. dnac.accesscontracts.put_contractAccess()
+7. dnac.accesscontracts.deploy()
+8. dnac.accesscontracts.getContractCount()
+9. dnac.accesscontracts.updateAccessContract()
+10. dnac.accesscontracts.get_contractAccess()
+11. dnac.accesscontracts.verifyContractExistInDnac()     
+12. dnac.accesscontracts.get_contractAccessByName()
+13. dnac.accesscontracts.post_contractAccess()  
+
+AccessPolicy Functions Available:
+===================================
+1. dnac.sgtpolicy.createSecurityGroupPolicy()
+2. dnac.sgtpolicy.updatePolicyStatusContract()
+3. dnac.sgtpolicy.deploy()
+4. dnac.sgtpolicy.createSecurityGroupPolicyFromDestinationToSources()
+5. dnac.sgtpolicy.createSecurityGroupPolicyFromSourceToDestinations()
+6. dnac.sgtpolicy.get_policyaccess()
+7. dnac.sgtpolicy.getPolicyCount()
+8. dnac.sgtpolicy.get_policyaccess_summary()
+9. dnac.sgtpolicy.post_policyaccess()
+10. dnac.sgtpolicy.put_policyaccess()
+11. dnac.sgtpolicy.getPolicyFromSGToDG()
+12. dnac.sgtpolicy.getAllPolicyNameContractList()
+
 
 Release Notes
 -------------
