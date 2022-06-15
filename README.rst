@@ -2,11 +2,11 @@
 sgtpolicysdk
 =============
 
-*Work with the DNA Center APIs in native Python!*
+*Work with the DNA Center SGT/Policy configuration in native Python!*
 
 -------------------------------------------------------------------------------
 
-**sgtpolicysdk** is a *community developed* Python library for working with the DNA Center APIs.  Our goal is to make working with DNA Center in Python a *native* and *natural* experience!
+**sgtpolicysdk** is a *cisco community developed* Python library for working with the DNA Center APIs security groups, access contracts and policies.  Our goal is to make working with DNA Center in Python a *native* and *natural* experience!
 
 .. code-block:: python
 
@@ -19,18 +19,24 @@ Installation
 ------------
 
 Installing and upgrading sgtpolicysdk is easy:
+**Install through downloaded/cloned from github**
+.. code-block:: bash
+    
+    $ git clone git@github.com:DNACENSolutions/Sgtpolicysdk.git
+    $ cd Sgtpolicysdk
+    $ python3 setup.py install
 
 **Install via PIP**
 
 .. code-block:: bash
 
-    $ pip install sgtpolicysdk
+    $ pip3 install sgtpolicysdk
 
 **Upgrading to the latest Version**
 
 .. code-block:: bash
 
-    $ pip install sgtpolicysdk --upgrade
+    $ pip3 install sgtpolicysdk --upgrade
 
 
 QuickUsageExample:
@@ -61,9 +67,6 @@ QuickUsageExample:
 
 Documentation
 -------------
-
-**Excellent documentation is now available at:**
-https://sgtpolicysdk.readthedocs.io
 
 Check out the Quickstart_ to dive in and begin using sgtpolicysdk.
 
