@@ -43,6 +43,48 @@ from .v2_3_4.securitygroups import SecurityGroups as SecurityGroups_v2_3_4
 from .v2_3_4.accesscontracts import AccessContracts as AccessContracts_v2_3_4
 from .v2_3_4.sgtpolicy import SGTPolicy as SGTPolicy_v2_3_4
 
+#Internal Modules From Version 1_2_10( Release)
+from .v1_2_10.task import Task as Task_v1_2_10
+from .v1_2_10.securitygroups import SecurityGroups as SecurityGroups_v1_2_10
+from .v1_2_10.accesscontracts import AccessContracts as AccessContracts_v1_2_10
+from .v1_2_10.sgtpolicy import SGTPolicy as SGTPolicy_v1_2_10
+
+#Internal Modules From Version 1.3.0( Release)
+from .v1_3_0.task import Task as Task_v1_3_0
+from .v1_3_0.securitygroups import SecurityGroups as SecurityGroups_v1_3_0
+from .v1_3_0.accesscontracts import AccessContracts as AccessContracts_v1_3_0
+from .v1_3_0.sgtpolicy import SGTPolicy as SGTPolicy_v1_3_0
+
+#Internal Modules From Version 1.3.1 ( Release)
+from .v1_3_1.task import Task as Task_v1_3_1
+from .v1_3_1.securitygroups import SecurityGroups as SecurityGroups_v1_3_1
+from .v1_3_1.accesscontracts import AccessContracts as AccessContracts_v1_3_1
+from .v1_3_1.sgtpolicy import SGTPolicy as SGTPolicy_v1_3_1
+
+#Internal Modules From Version 1.3.3 ( Release)
+from .v1_3_3.task import Task as Task_v1_3_3
+from .v1_3_3.securitygroups import SecurityGroups as SecurityGroups_v1_3_3
+from .v1_3_3.accesscontracts import AccessContracts as AccessContracts_v1_3_3
+from .v1_3_3.sgtpolicy import SGTPolicy as SGTPolicy_v1_3_3
+
+#Internal Modules From Version 2.1.2 ( Release)
+from .v2_1_2.task import Task as Task_v2_1_2
+from .v2_1_2.securitygroups import SecurityGroups as SecurityGroups_v2_1_2
+from .v2_1_2.accesscontracts import AccessContracts as AccessContracts_v2_1_2
+from .v2_1_2.sgtpolicy import SGTPolicy as SGTPolicy_v2_1_2
+
+#Internal Modules From Version 2.2.1 ( Release)
+from .v2_2_1.task import Task as Task_v2_2_1
+from .v2_2_1.securitygroups import SecurityGroups as SecurityGroups_v2_2_1
+from .v2_2_1.accesscontracts import AccessContracts as AccessContracts_v2_2_1
+from .v2_2_1.sgtpolicy import SGTPolicy as SGTPolicy_v2_2_1
+
+#Internal Modules From Version 2.2.3 ( Release)
+from .v2_2_3.task import Task as Task_v2_2_3
+from .v2_2_3.securitygroups import SecurityGroups as SecurityGroups_v2_2_3
+from .v2_2_3.accesscontracts import AccessContracts as AccessContracts_v2_2_3
+from .v2_2_3.sgtpolicy import SGTPolicy as SGTPolicy_v2_2_3
+
 class DNACenterSGTPolicyAPI(object):
     """Cisco DNA Center API wrapper.
     Creates a 'session' for all API calls through a created DNACenterAPI
@@ -173,6 +215,78 @@ class DNACenterSGTPolicyAPI(object):
                 AccessContracts_v2_3_4(self)
             self.sgtpolicy = \
                 SGTPolicy_v2_3_4(self)
+        elif version == '1.2.10' or version.find("1.2.10") != -1:
+            self.task = \
+                Task_v1_1_10(self._session)
+            self.securitygroups = \
+                SecurityGroups_v1_2_10(self)
+            self.accesscontracts = \
+                AccessContracts_v1_2_10(self)
+            self.sgtpolicy = \
+                SGTPolicy_v1_2_10(self)
+        elif version == '1.3.0' or version.find("1.3.0") != -1:
+            self.task = \
+                Task_v1_3_0(self._session)
+            self.securitygroups = \
+                SecurityGroups_v1_3_0(self)
+            self.accesscontracts = \
+                AccessContracts_v1_3_0(self)
+            self.sgtpolicy = \
+                SGTPolicy_v1_3_0(self)
+        elif version == '1.3.1' or version.find("1.3.1") != -1:
+            self.task = \
+                Task_v1_3_1(self._session)
+            self.securitygroups = \
+                SecurityGroups_v1_3_1(self)
+            self.accesscontracts = \
+                AccessContracts_v1_3_1(self)
+            self.sgtpolicy = \
+                SGTPolicy_v1_3_1(self)
+        elif version == '1.3.1' or version.find("1.3.1") != -1:
+            self.task = \
+                Task_v1_3_1(self._session)
+            self.securitygroups = \
+                SecurityGroups_v1_3_1(self)
+            self.accesscontracts = \
+                AccessContracts_v1_3_1(self)
+            self.sgtpolicy = \
+                SGTPolicy_v1_3_1(self)
+        elif version == '1.3.3' or version.find("1.3.3") != -1:
+            self.task = \
+                Task_v1_3_3(self._session)
+            self.securitygroups = \
+                SecurityGroups_v1_3_3(self)
+            self.accesscontracts = \
+                AccessContracts_v1_3_3(self)
+            self.sgtpolicy = \
+                SGTPolicy_v1_3_3(self)
+        elif version == '2.1.2' or version.find("2.1.2") != -1:
+            self.task = \
+                Task_v2_1_2(self._session)
+            self.securitygroups = \
+                SecurityGroups_v2_1_2(self)
+            self.accesscontracts = \
+                AccessContracts_v2_1_2(self)
+            self.sgtpolicy = \
+                SGTPolicy_v2_1_2(self)
+        elif version == '2.2.1' or version.find("2.2.1") != -1:
+            self.task = \
+                Task_v2_2_1(self._session)
+            self.securitygroups = \
+                SecurityGroups_v2_2_1(self)
+            self.accesscontracts = \
+                AccessContracts_v2_2_1(self)
+            self.sgtpolicy = \
+                SGTPolicy_v2_2_1(self)
+        elif version == '2.2.3' or version.find("2.2.3") != -1:
+            self.task = \
+                Task_v2_2_3(self._session)
+            self.securitygroups = \
+                SecurityGroups_v2_2_3(self)
+            self.accesscontracts = \
+                AccessContracts_v2_2_3(self)
+            self.sgtpolicy = \
+                SGTPolicy_v2_2_3(self)
         else:
             print("No Matching version provided.")
             return False
