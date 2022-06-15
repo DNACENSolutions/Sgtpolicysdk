@@ -79,6 +79,7 @@ Documentation
 -------------
 
 Security Group Functions Available:
+
 1. createSecurityGroup(sgName, sgTag, sgDescription="", virtualNetworks=[])
         '''
             Ceate a security group in DNAC.
@@ -96,6 +97,7 @@ Security Group Functions Available:
     >>> dnac.securitygroups.createSecurityGroup("SampleSGT1",1001,sgDescription="Sample SGT", virtualNetworks=["DEFAULT_VN", "testvn"])
     {'status': True}
     >>> 
+    
 2. updateSecurityGroup(name, securityGroupTag=None, description="",propagateToAci=None, virtualNetworks=[]):
         '''
             Function: updateSecurityGroup
@@ -111,8 +113,103 @@ Security Group Functions Available:
  .. code-block:: bash
     >>> dnac.securitygroups.updateSecurityGroup("SampleSGT1",securityGroupTag=1002)
     {'status': True}
-
     
+3. addSecurityGroupToVirtualNetwork(sg_name, virtualNetworks):
+        '''
+            Function: addSecurityGroupToVirtualNetwork
+            INPUTs:
+                virtualNetworks : List of Virtual Network Names
+                sg_name : Security Group Name
+            OUTPUT:
+                When Success: {"status":True, "failureReason":""}
+                {"status":False, "failureReason":"<Failure expanation>"
+        ''')
+ .. code-block:: bash
+    >>> dnac.securitygroups.addSecurityGroupToVirtualNetwork("SampleSGT1",virtualNetworks=["DEFAULT_VN","testvn"])
+    {'status': True}
+    >>> dnac.securitygroups.addSecurityGroupToVirtualNetwork("SampleSGT1",virtualNetworks=["nonexistingvn"])
+    {'status': False, 'failureReason': 'Not all virtualNetworks provided, exist in DNAC, Create VirtualNetwork in DNAC first'}
+
+4. checkSecurityGroupsExistingInDnac(securityGroupList, expect=True):
+        '''
+            Function: checkSecurityGroupsExistingInDnac
+            Description: Check sg name and tag in dnac
+            Input: List of Security Groups, expect = True/False
+            Output: Success -> True
+                    Failure -> False
+        ''' 
+5. getSecurityGroupIdByName(name):
+        '''
+            getSecurityGroupIdByName
+            INPUT: Security Group name
+            OUTPUT:
+                if Security Group Found: {status:True, 'id':<id>}
+                if Security Group not Found: {status:False, 'id':'', 'errorReason':''}
+        '''
+
+6. getSecurityGroupTagByName(name):
+        '''
+            getSecurityGroupTagByName
+            INPUT: Security Group name
+            OUTPUT:
+                if Security Group Found: {status:True, 'securityGroupTag':<securityGroupTag>}
+                if Security Group not Found: {status:False, 'securityGroupTag':'', 'errorReason':''}
+        '''
+
+7. getSecurityGroupCount():
+        '''
+            getSecurityGroupCount
+            description: Return the count of SecurityGroups in DNAC
+            INPUT: NA
+            OUTPUT:
+                status:True
+                count: Total SGT count
+        '''
+ .. code-block:: bash
+        >>> dnac.securitygroups.getSecurityGroupCount()
+        {'status': True, 'count': 36}
+8. deleteSecurityGroupByName(name):
+        '''
+            deleteSecurityGroupByName
+            description: Delete a give security group
+            INPUT: name
+            OUTPUT:
+                status:True 
+                status:False, failureReason: <reason> 
+        '''
+        
+ 9. deploy(verifyDone=False, verifyNoRequest=False, retries=1, timeout=DEFAULT_SGT_TIMEOUT):
+        '''
+            Function: deployAndVerifySecurityGroups
+            INPUT: 
+                verifyDone = True/False  : To validate if the SGT push is complete.
+                verifyNoRequest = True/False  : To validate there was no pending deploy action.
+            OUTPUT:
+                For Success: {'status':True}
+                For Faillure: {'status':False, 'failureReason': "<reason string>"}
+        '''
+        
+ 10. push(verifyDone=False, verifyNoRequest=False, timeout=DEFAULT_SGT_TIMEOUT):
+        '''
+            Function: pushAndVerifySecurityGroups
+            INPUT: 
+                verifyDone = True/False  : To validate if the SGT push is complete.
+                verifyNoRequest = True/False  : To validate there was no pending deploy action.
+            OUTPUT:
+                For Success: {'status':True}
+                For Faillure: {'status':False, 'failureReason': "<reason string>"}
+        '''
+  11. get_securityGroup_summary(**kwargs):
+        '''
+            Function: get_securityGroup_summary
+            Description: GET request for security group summary
+            INPUT: kwargs
+            OUTPUT: Returns response
+        '''
+   .. code-block:: bash
+      >>> dnac.securitygroups.get_securityGroup_summary()
+    {'id': 'cd1a5a24-7f83-4a5b-a358-f08d97dc2a78', 'response': [{'instanceId': 0, 'instanceVersion': 0, 'totalSGCount': 36, 'acaScalableGroupSummary': []}
+
 Release Notes
 -------------
 
