@@ -31,7 +31,7 @@ from ...utils import (
 )
 import logging
 logger = logging.getLogger("SecurityGroups")
-
+import json
 #Default Timers
 DEFAULT_SGT_TIMEOUT=60
 DEFAULT_TASK_COMPLETION_TIMEOUT=120
@@ -81,7 +81,6 @@ class SecurityGroups(object):
         check_type(sgTag,int)
         check_type(sgDescription,basestring)
         check_type(virtualNetworks,list)
-
         security_groups = [
             {
                 "description": sgDescription,
@@ -148,10 +147,12 @@ class SecurityGroups(object):
 
     def updateSecurityGroup(self, name, securityGroupTag=None, description="",propagateToAci=None, virtualNetworks=[]):
         '''
-            Function: addSecurityGroupToVirtualNetwork
+            Function: updateSecurityGroup
             INPUTs:
                 virtualNetworks : List of Virtual Network Names
                 name : Security Group Name
+                securityGroupTag: optional tag value
+                description: Optional Description
             OUTPUT:
                 When Success: {"status":True, "failureReason":""}
                 {"status":False, "failureReason":"<Failure expanation>"
@@ -202,7 +203,6 @@ class SecurityGroups(object):
         '''
         check_type(securityGroupList,list)
         check_type(expect,bool) 
-     
         self.log.info("Start to check sg_list in DNAC")
         missing_list=[]
         exist_list=[]
@@ -223,7 +223,7 @@ class SecurityGroups(object):
 
     def getSecurityGroupIdByName(self, name):
         '''
-            get_sg_id_by_name
+            getSecurityGroupIdByName
             INPUT: Security Group name
             OUTPUT:
                 if Security Group Found: {status:True, 'id':<id>}
@@ -304,7 +304,6 @@ class SecurityGroups(object):
                     "scalableGroupType":response_sg['response'][0]['scalableGroupType'],
                     "isDeleted":True
                 }
-        
         delete_response = self.put_securityGroup(json=sgt_data)
         self.log.debug(delete_response)
         taskStatus = self._task.wait_for_task_complete(delete_response)
@@ -349,7 +348,7 @@ class SecurityGroups(object):
         return { "status" : True }
 
     #Deploy Functions
-    def pushAndVerifySecurityGroups(self, verifyDone=False, verifyNoRequest=False, timeout=DEFAULT_SGT_TIMEOUT):
+    def push(self, verifyDone=False, verifyNoRequest=False, timeout=DEFAULT_SGT_TIMEOUT):
         '''
             Function: pushAndVerifySecurityGroups
             INPUT: 
@@ -374,14 +373,15 @@ class SecurityGroups(object):
                 self.log.info("######################################")
                 return { 'status' : True }
             else:
-                return { 'status' : False, 'failureReason': "Deploy status is not DONE, Reterived status:{}".format(response_deploy_sg['deployStatus'] ) }
+                return { 'status' : False, 'failureReason': "Deploy status is not DONE, Reterived status:{}".format(response_deploy_sg ) }
         elif verifyNoRequest:
             if (response_deploy_sg['data'] == 'deployStatus=NO_REQUEST_AVAILABLE'):
                 return { 'status' : True }
             else:
-                return { 'status' : False, 'failureReason': "Deploy status is not NO_REQUEST_AVAILABLE, Reterived status:{}".format(response_deploy_sg['deployStatus'] )}
+                return { 'status' : False, 'failureReason': "Deploy status is not NO_REQUEST_AVAILABLE, Reterived status:{}".format(response_deploy_sg )}
+        return {'status' : True }
 
-    def deployAndVerifySecurityGroups(self, verifyDone=False, verifyNoRequest=False, retries=1, timeout=DEFAULT_SGT_TIMEOUT):
+    def deploy(self, verifyDone=False, verifyNoRequest=False, retries=1, timeout=DEFAULT_SGT_TIMEOUT):
         '''
             Function: deployAndVerifySecurityGroups
             INPUT: 
@@ -395,12 +395,11 @@ class SecurityGroups(object):
         check_type(verifyNoRequest,bool)
         check_type(retries,int)
         check_type(timeout,int)
-        
         try:
             while retries:
                 try:
                     retries -=1
-                    response = self.services.put_acaControllerServiceDeploy(timeout=timeout)
+                    response = self.put_acaControllerServiceDeploy(timeout=timeout)
                     response_deploy = self._task.wait_for_task_complete(response)
 
                     self.log.info(response_deploy)
@@ -413,16 +412,16 @@ class SecurityGroups(object):
                             self.log.info("############################")
                             return { 'status' : True }
                         else:
-                            return { 'status' : False, 'failureReason': "Deploy Status : {0}".format(response_deploy['deployStatus'])}
+                            return { 'status' : False, 'failureReason': "Deploy Status : {0}".format(response_deploy)}
                     elif verifyNoRequest:
                         if response_deploy['data'] == 'deployStatus=NO_REQUEST_AVAILABLE':
                             return { 'status' : True }
                         else:
-                            return { 'status' : False, 'failureReason': "Deploy Status : {0}".format(response_deploy['deployStatus'])}
+                            return { 'status' : False, 'failureReason': "Deploy Status : {0}".format(response_deploy)}
                     elif response_deploy['data'] == 'deployStatus=DONE' or response_deploy['data'] == 'deployStatus=NO_REQUEST_AVAILABLE':
                         return { 'status' : True }
                     else:
-                        return { 'status' : False, 'failureReason': "Deploy Status : {0}".format(response_deploy['deployStatus'])}
+                        return { 'status' : False, 'failureReason': "Deploy Status : {0}".format(response_deploy)}
                 except Exception as e:
                     if retries<1:
                         raise Exception(e)
@@ -435,7 +434,6 @@ class SecurityGroups(object):
             self.log.error("#!!!FAILED TO DEPLOY. ERROR: {}----#".format(e))
             self.log.error("#################################################################################")
             raise Exception(e)
-
     #===============================================
     # API Calls
     #===============================================
@@ -525,7 +523,7 @@ class SecurityGroups(object):
 
     def put_securityGroup(self, **kwargs):
         '''
-            Function: Update security Group
+            Function: put_securityGroup
             Description: Update request for SGT Group
             INPUT: kwargs
             OUTPUT: Returns response
@@ -611,7 +609,6 @@ class SecurityGroups(object):
             Description: Update request for Deploy now action
             INPUT: kwargs
             OUTPUT: Returns response
-
         '''
         url = ACACONTROLLERPATH + "/deploy"
         method = 'PUT'

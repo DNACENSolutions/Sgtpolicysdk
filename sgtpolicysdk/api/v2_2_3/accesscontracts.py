@@ -17,7 +17,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from builtins import *
@@ -113,6 +112,9 @@ class AccessContracts(object):
     def getAllContractName(self):
         """
         GET all contract name list
+        Function name: getAllContractName
+        Input: 
+        Output: List of names of all available contracts in DNAC.
         """
         self.log.info("Start to get all contract names in DNAC")
         contractlist = []
@@ -122,10 +124,11 @@ class AccessContracts(object):
         for response in contract_response_sum["acaContractSummary"]:
             name = response["name"]
             contractlist.append(name)
-        return contractlist
+        return {'status':True, 'contracts' : contractlist}
             
     def getContractCount(self):
         """
+        Function: 
         GET total access contract count
         """
         self.log.info("Start to count contract in DNAC")
@@ -134,7 +137,7 @@ class AccessContracts(object):
         self.log.info(contract_response)
         contract_response_sum = contract_response["response"][0]
         count = contract_response_sum["totalContractCount"]
-        return count
+        return {'status':True, 'count': count}
 
     def verifyContractExistInDnac(self, contract_list, expect=True):
         """
@@ -166,21 +169,21 @@ class AccessContracts(object):
                 self.log.info("#####################################################")
                 self.log.info("#----Contracts exists in DNAC {}----#".format(contract_list))
                 self.log.info("#####################################################")
-                return True
+                return {'status':True}
             else:
                 self.log.error("Some Contracts do not exist in DNAC "
                                     "or have different information".format(missing_list))
-                return False
+                return {'status':False, 'failureReason':"Some contracts do not exist in DNAC"}
         else:
             if len(missing_list)==len(contract_list):
                 self.log.info("#####################################################")
-                self.log.info("#----Contract list don't exists in DNAC {}----#".format(contract_list))
+                self.log.info("#----as expected Contracts list doesn't exists in DNAC {}----#".format(contract_list))
                 self.log.info("#####################################################")
-                return True
+                return {'status':True}
             else:
-                self.log.error("Some Contracts still exist in DNAC "
+                self.log.error("Some contracts still exist in DNAC "
                                     "or have different information".format(exist_list))
-                return False
+                return {'status':True, 'failureReason':"Some contracts still exist in DNAC."}
 
     def updateAccessContract(self, contract_name,description=None,contract_data=None,clause=None,**kwargs):
         """
@@ -236,7 +239,64 @@ class AccessContracts(object):
             self.log.info("###################################################################")
             return {'status':True}
 
+    def delete_contractAccessByName(self, contract_name, **kwargs):
+        """ delete a single contract with the given instance uuid
 
+        Args:
+            contract_name(str): Access Contract name
+            kwargs (dict): additional parameters to be passed
+
+        Returns:
+            dict: response of api call
+
+        Raises:
+
+            ApiClientException: when unexpected query parameters are passed.
+        """
+        check_type(contract_name,basestring)
+
+        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH2
+        contract_response = self.get_contractAccessSummary()
+        delete_list = [ac['id'] for i,ac in enumerate((contract_response['response'][0]['acaContractSummary'])) if ac['name'] == contract_name]
+        if len(delete_list) == 0:
+            self.log.error("No contract name exist to delete it")
+            return {"status" : False}
+        else:
+            self.log.info("Contract exist for deletion") 
+            ac_data = {
+                "deleteList": delete_list,   
+            }
+        
+        delete_response = self.post_contractAccess(url=url,json=ac_data)
+        self.log.debug(delete_response)
+        taskStatus = self._task.wait_for_task_complete(delete_response)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Deleting access contract failed:{0}".format(taskStatus['failureReason']))
+            return {"status" : False, 'failureReason':'Deleting access contract {} failed:{}'.format(contract_name,taskStatus['failureReason'])}
+        self.log.info("#----SUCCESSFULLY DELETED access contract {}----#".format(contract_name))
+        return { "status" : True }
+
+    def deploy(self,timeout=DEFAULT_TASK_COMPLETION_TIMEOUT):
+        """
+            Deploy the policy and sync with ISE
+            Input: 
+            Result:
+                {status: True}                                           : When policy deploy is success..
+                {status: False, 'failureReason':"<failure description>"} : When policy failed to be deployed with failure reason.
+        """
+        response = self.put_acaControllerServiceDeploy()
+        taskStatus = self._task.wait_for_task_complete(response, timeout=timeout)
+        self.log.info(taskStatus)
+        if (taskStatus['isError']):
+            self.log.error("Deploy access contracts failed:{0}".format(taskStatus['failureReason']))
+            return {'status':False, "failureReason":"Deploy access contracts failed: {}".format(taskStatus['failureReason'])}
+        self.log.info("######################################################################################################")
+        self.log.info("#----SUCCESSFULLY DEPLOYED ACCESS CONTRACTS----#")
+        self.log.info("######################################################################################################")
+        return {'status':True, 'taskStatus': taskStatus}
+
+    #==========================================================================================================
     #=========================================      Base APIs     =============================================
     #==========================================================================================================
     def get_contractAccess(self, **kwargs):
@@ -372,44 +432,6 @@ class AccessContracts(object):
         self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
         self.log.info("Response {}".format(response))
         return response
-
-    def delete_contractAccessByName(self, contract_name, **kwargs):
-        """ delete a single contract with the given instance uuid
-
-        Args:
-            contract_name(str): Access Contract name
-            kwargs (dict): additional parameters to be passed
-
-        Returns:
-            dict: response of api call
-
-        Raises:
-
-            ApiClientException: when unexpected query parameters are passed.
-        """
-        check_type(contract_name,basestring)
-
-        url = '/'+ DEFAULT_VERSION + CONTRACT_URL_PATH2
-        contract_response = self.get_contractAccessSummary()
-        delete_list = [ac['id'] for i,ac in enumerate((contract_response['response'][0]['acaContractSummary'])) if ac['name'] == contract_name]
-        if len(delete_list) == 0:
-            self.log.error("No contract name exist to delete it")
-            return {"status" : False}
-        else:
-            self.log.info("Contract exist for deletion") 
-            ac_data = {
-                "deleteList": delete_list,   
-            }
-        
-        delete_response = self.post_contractAccess(url=url,json=ac_data)
-        self.log.debug(delete_response)
-        taskStatus = self._task.wait_for_task_complete(delete_response)
-        self.log.info(taskStatus)
-        if (taskStatus['isError']):
-            self.log.error("Deleting access contract failed:{0}".format(taskStatus['failureReason']))
-            return {"status" : False, 'failureReason':'Deleting access contract {} failed:{}'.format(contract_name,taskStatus['failureReason'])}
-        self.log.info("#----SUCCESSFULLY DELETED access contract {}----#".format(contract_name))
-        return { "status" : True }
        
     def put_acaControllerServiceDeploy(self, **kwargs):
         '''
