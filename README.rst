@@ -78,9 +78,41 @@ QuickUsageExample:
 Documentation
 -------------
 
-Check out the Quickstart_ to dive in and begin using sgtpolicysdk.
+Security Group Functions Available:
+1. createSecurityGroup(sgName, sgTag, sgDescription="", virtualNetworks=[])
+        '''
+            Ceate a security group in DNAC.
+            Function: createSecurityGroup
+            Input: 
+                sgName =  Security Group Name
+                sgTag = Security Group Tag
+                sgDescription =  Security Group Description
+                virtualNetworks =  list of Virtual Networks.
+            Output:
+                When Success : {'status':True}  
+                When Failed  : {status:False, "failureReason":"<failure reason>"}
+        '''
+ .. code-block:: bash
+    >>> dnac.securitygroups.createSecurityGroup("SampleSGT1",1001,sgDescription="Sample SGT", virtualNetworks=["DEFAULT_VN", "testvn"])
+    {'status': True}
+    >>> 
+2. updateSecurityGroup(name, securityGroupTag=None, description="",propagateToAci=None, virtualNetworks=[]):
+        '''
+            Function: updateSecurityGroup
+            INPUTs:
+                virtualNetworks : List of Virtual Network Names
+                name : Security Group Name
+                securityGroupTag: optional tag value
+                description: Optional Description
+            OUTPUT:
+                When Success: {"status":True, "failureReason":""}
+                {"status":False, "failureReason":"<Failure expanation>"
+        '''
+ .. code-block:: bash
+    >>> dnac.securitygroups.updateSecurityGroup("SampleSGT1",securityGroupTag=1002)
+    {'status': True}
 
-
+    
 Release Notes
 -------------
 
