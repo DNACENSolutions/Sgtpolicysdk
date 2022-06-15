@@ -24,9 +24,8 @@ Installing and upgrading sgtpolicysdk is easy:
 1. Checkout code.
 
 .. code-block:: bash
-    
     $ git clone git@github.com:DNACENSolutions/Sgtpolicysdk.git
-    
+
 2. Move to code directory
 
 .. code-block:: bash
