@@ -67,7 +67,7 @@ class AccessContracts(object):
         self.log = logger
 
 
-    def createNewContract(self,contract_name,description=None,contract_data = [],**kwargs):
+    def createNewContract(self,contract_name,description=None,contract_data = []):
         """
         Create access contract
         Args:

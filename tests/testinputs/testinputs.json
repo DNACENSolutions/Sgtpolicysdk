@@ -1,0 +1,33 @@
+{
+	"SGTINPUTS": {
+		"CREATESGTLIST": [
+			{"sgName":"SGNAME1", "sgTag": 10001},
+			{"sgName":"SGNAME2", "sgTag": 10002}
+		],
+		"UPDATESGTLIST": [
+		]
+	},
+	"CONTRACTINPUTS": {
+		"CREATECONTRACTLLIST": [
+			{"contract_name":"CONTRACT1","description":"SAMPLE Contract1",
+				"contract_data" :[{"access": "DENY", 
+                  	"applicationName":"wap-vcal-s",
+                  	"dstNetworkIdentities":[{"protocol":"UDP","ports":"9207"},
+                                          {"protocol":"TCP","ports":"9207"}], 
+                  	"logging": "OFF"}]}
+		],
+		"UPDATECONTRACTLLIST": [
+			
+		]
+	},
+	"POLICYINPUTS": {
+		"CREATEPOLICYLIST" : [
+			[
+				{"srcSGName":"SGNAME1", "dstSGNames":"SGNAME2", "accessContract": "CONTRACT1"}
+			]
+		],
+		"UPDATEPOLICYLIST" : [
+			
+		]
+	}
+}
