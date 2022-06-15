@@ -20,10 +20,20 @@ Installation
 
 Installing and upgrading sgtpolicysdk is easy:
 **Install through downloaded/cloned from github**
+
+1. Checkout code.
+
 .. code-block:: bash
     
     $ git clone git@github.com:DNACENSolutions/Sgtpolicysdk.git
+    
+2. Move to code directory
+
+.. code-block:: bash
     $ cd Sgtpolicysdk
+
+3. Install in your python environment
+.. code-block:: bash
     $ python3 setup.py install
 
 **Install via PIP**
