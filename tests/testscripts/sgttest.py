@@ -84,5 +84,14 @@ class Test_create_all_sgts(aetest.Testcase):
                 	if not dnac_obj.securitygroups.createSecurityGroup(sgtitem["sgName"],sgtitem["sgTag"])['status']:
                 		step.failed("Failed creating sgt:{}".format())
         
+    @aetest.test
+    def test1_update_sgts(self, dnac_obj):
+        logging.info("Creating all SGTs from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["UPDATESGTLIST"]:
+            with steps.start("Updating SGT with sgy inputs",continue_= True) as step:
+                with step.start("Updating SGT: {}".format(sgtitem['name']),continue_= True):
+                    if not dnac_obj.securitygroups.updateSecurityGroup(sgtitem["sgName"],sgtitem["sgTag"])['status']:
+                        step.failed("Failed creating sgt:{}".format())
 
 
