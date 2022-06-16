@@ -56,7 +56,11 @@ QuickUsageExample:
     Type "help", "copyright", "credits" or "license" for more information.
 
     >>> from sgtpolicysdk import DNACenterSGTPolicyAPI
-
+serverip="10.195.243.53"
+username="admin"
+password="Maglev123"
+version="2.2.3"
+        
     >>> dnac = DNACenterSGTPolicyAPI(server=serverip,username=username,password=password)
     /Users/pawansingh/Library/Python/3.7/lib/python/site-packages/urllib3/connectionpool.py:1050: InsecureRequestWarning: Unverified HTTPS request is being made to host '...'. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.io/en/1.26.x/advanced-usage.html#ssl-warnings
       InsecureRequestWarning,
@@ -64,13 +68,13 @@ QuickUsageExample:
     >>> dnac.securitygroups.getSecurityGroupIdByName("Auditors")
     {'status': True, 'id': '6ed523e7-91e4-4600-b6ba-62b822e7f609'}
 
-    >>> dnac.securitygroups.updateSecurityGroup("sampleSGT",virtualNetworks=["WiredVNFBLayer2"])
+    >>> dnac.securitygroups.updateSecurityGroup("Auditors",virtualNetworks=["WiredVNFBLayer2"])
     {'status': True}
 
     >>> dnac.securitygroups.pushAndVerifySecurityGroups(verifyNoRequest=True)
     {'status': True}
 
-    >>> dnac.securitygroups.updateSecurityGroup("sampleSGT",virtualNetworks=["VN1"])
+    >>> dnac.securitygroups.updateSecurityGroup("Auditors",virtualNetworks=["VN1"])
     {'status': False, 'failureReason': 'Not all virtualNetworks provided, exist in DNAC, Create VirtualNetwork in DNAC first'}
 
 
