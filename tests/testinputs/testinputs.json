@@ -1,11 +1,32 @@
 {
 	"SGTINPUTS": {
 		"CREATESGTLIST": [
-			{"sgName":"SGNAME1", "sgTag": 10001},
-			{"sgName":"SGNAME2", "sgTag": 10002}
+			{"sgName":"SGNAME15", "sgTag": 11001},
+			{"sgName":"SGNAME16", "sgTag": 11002}
 		],
-		"UPDATESGTLIST": [
-		]
+                "CREATESGTVNLIST": [
+                        {"sgName":"SGNAME17", "sgTag": 41001,"virtualNetworks": ["DEFAULT_VN","test1234"]},
+                        {"sgName":"SGNAME18", "sgTag": 41002,"virtualNetworks": ["test1234","test123456"]}
+                ],
+                "GETSGTLIST":[
+                        {"sgName":"Production_Servers"},
+                        {"sgName":"PCI_Servers"}
+                ],
+                "SECURITYGROUPLIST":["IPNetGroup2011","IPNetGroup2012","IPNetGroup2013","Contractors"],
+		"UPDATESGTTAGLIST": [
+                        {"sgName":"SGNAME17", "sgTag": 21001},
+                        {"sgName":"SGNAME18", "sgTag": 21002}
+		],
+                "UPDATESGTVNLIST": [
+                        {"sgName":"SGNAME15", "virtualNetworks": ["test1234"]},
+                        {"sgName":"SGNAME16", "virtualNetworks": ["test123456"]}
+                ],
+                "DELETESGTLIST":[
+                        {"sgName":"SGNAME15"},
+                        {"sgName":"SGNAME16"},
+                        {"sgName":"SGNAME17"},
+                        {"sgName":"SGNAME18"}
+                ]
 	},
 	"CONTRACTINPUTS": {
 		"CREATECONTRACTLLIST": [
@@ -17,8 +38,12 @@
                   	"logging": "OFF"}]}
 		],
 		"UPDATECONTRACTLLIST": [
-			
-		]
+		     
+		],
+                "DELETECONTRACTLLIST": [
+                       
+                ]          
+
 	},
 	"POLICYINPUTS": {
 		"CREATEPOLICYLIST" : [
@@ -28,6 +53,9 @@
 		],
 		"UPDATEPOLICYLIST" : [
 			
-		]
+		],
+                "DELETEPOLICYLIST" : [
+
+                ]                
 	}
 }

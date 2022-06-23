@@ -75,23 +75,112 @@ class CommonSetup(aetest.CommonSetup):
 
 class Test_create_all_sgts(aetest.Testcase):
     @aetest.test
-    def test1_create_all_sgts(self, dnac_obj):
+    def test1_create_sgts(self, dnac_obj):
         logging.info("Creating all SGTs from the input")
         steps=Steps()
         for sgtitem in dnac_obj.testinput["SGTINPUTS"]["CREATESGTLIST"]:
-            with steps.start("Creating SGT with sgy inputs",continue_= True) as step:
-                with step.start("Creting SGT: {}".format(sgtitem['name']),continue_= True):
-                	if not dnac_obj.securitygroups.createSecurityGroup(sgtitem["sgName"],sgtitem["sgTag"])['status']:
-                		step.failed("Failed creating sgt:{}".format())
-        
+            with steps.start("Creating SGT with SGT inputs",continue_= True) as step:
+                with step.start("Creating SGT: {}".format(sgtitem['sgName']),continue_= True):
+                    if not dnac_obj.securitygroups.createSecurityGroup(sgtitem["sgName"],sgtitem["sgTag"])['status']:
+                        step.failed("Failed creating sgt:{}".format(sgtitem['sgName']))
+                    else: 
+                        dnac_obj.securitygroups.pushAndVerifySecurityGroups()
+                        logging.info("Created SGT: {}".format(sgtitem['sgName']))     
+
     @aetest.test
-    def test1_update_sgts(self, dnac_obj):
+    def test2_create_sgts_with_vn(self, dnac_obj):
         logging.info("Creating all SGTs from the input")
         steps=Steps()
-        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["UPDATESGTLIST"]:
-            with steps.start("Updating SGT with sgy inputs",continue_= True) as step:
-                with step.start("Updating SGT: {}".format(sgtitem['name']),continue_= True):
-                    if not dnac_obj.securitygroups.updateSecurityGroup(sgtitem["sgName"],sgtitem["sgTag"])['status']:
-                        step.failed("Failed creating sgt:{}".format())
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["CREATESGTVNLIST"]:
+            with steps.start("Creating SGT with SGT inputs",continue_= True) as step:
+                with step.start("Creating SGT: {}".format(sgtitem['sgName']),continue_= True):
+                    if not dnac_obj.securitygroups.createSecurityGroup(sgtitem["sgName"],
+                                sgtitem["sgTag"],virtualNetworks=(sgtitem["virtualNetworks"]))['status']:
+                        step.failed("Failed creating sgt:{}".format(sgtitem['sgName']))
+                    else:
+                        dnac_obj.securitygroups.pushAndVerifySecurityGroups()
+                        logging.info("Created SGT: {}".format(sgtitem['sgName']))
 
+    @aetest.test
+    def test3_get_sgts_groupid(self, dnac_obj):
+        logging.info("Get all SGTs group ID details from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["GETSGTLIST"]:
+            with steps.start("Getting SGT group ID with SGT inputs",continue_= True) as step:
+                with step.start("Getting SGT group ID details: {}".format(sgtitem["sgName"]),continue_= True):
+                    if not dnac_obj.securitygroups.getSecurityGroupIdByName(sgtitem["sgName"])['status']:
+                        step.failed("Failed getting sgt group ID details:{}".format(sgtitem["sgName"]))
+                    else:
+                        logging.info("Got SGT group ID details: {}".format(sgtitem['sgName']))
+                        logging.info(dnac_obj.securitygroups.getSecurityGroupIdByName(sgtitem["sgName"]))
+
+    @aetest.test
+    def test4_get_sgts_grouptag(self, dnac_obj):
+        logging.info("Get all SGTs group tag details from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["GETSGTLIST"]:
+            with steps.start("Getting SGT group tag with SGT inputs",continue_= True) as step:
+                with step.start("Getting SGT group tag details: {}".format(sgtitem["sgName"]),continue_= True):
+                    if not dnac_obj.securitygroups.getSecurityGroupIdByName(sgtitem["sgName"])['status']:
+                        step.failed("Failed getting sgt group tag details:{}".format(sgtitem["sgName"]))
+                    else:
+                        logging.info("Got SGT group tag details: {}".format(sgtitem['sgName']))
+                        logging.info(dnac_obj.securitygroups.getSecurityGroupTagByName(sgtitem["sgName"]))
+
+    @aetest.test
+    def test5_get_sgts_groupcount(self, dnac_obj):
+        logging.info("Get Total SGT group count")
+        totalsgtcount = dnac_obj.securitygroups.getSecurityGroupCount()
+        logging.info(totalsgtcount)
+
+    @aetest.test
+    def test6_check_sgts_exist_in_dnac(self, dnac_obj):
+        logging.info("Verify SGTs from the input present in DNAC")
+        result = dnac_obj.securitygroups.checkSecurityGroupsExistingInDnac((dnac_obj.testinput["SGTINPUTS"]["SECURITYGROUPLIST"]))
+        logging.info(result)
+
+    @aetest.test
+    def test7_update_virtualnetworks_sgts(self, dnac_obj):
+        logging.info("Update all SGTs Virtual networks from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["UPDATESGTVNLIST"]:
+            with steps.start("Updating SGT Virtual Networks with SGT inputs",continue_= True) as step:
+                with step.start("Updating SGT Virtual Networks: {}".format(sgtitem['sgName']),continue_= True):
+                    if not dnac_obj.securitygroups.updateSecurityGroup(sgtitem["sgName"],
+                                virtualNetworks=(sgtitem["virtualNetworks"]))['status']:
+                        step.failed("Failed updating sgt VN:{}".format(sgtitem['sgName']))
+                    else:    
+                        dnac_obj.securitygroups.pushAndVerifySecurityGroups()
+                        logging.info("Updated SGT VN : {}".format(sgtitem['sgName']))
+        
+    @aetest.test
+    def test8_update_sgts_tag(self, dnac_obj):
+        logging.info("Update all SGTs tag from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["UPDATESGTTAGLIST"]:
+            with steps.start("Updating SGT Tag with SGT inputs",continue_= True) as step:
+                with step.start("Updating SGT Tag: {}".format(sgtitem["sgName"]),continue_= True):
+                    if not dnac_obj.securitygroups.updateSecurityGroup(sgtitem["sgName"],sgtitem["sgTag"])['status']:
+                        step.failed("Failed creating sgt tag: {}".format(sgtitem["sgName"]))
+                    else:
+                        dnac_obj.securitygroups.pushAndVerifySecurityGroups()
+                        logging.info("Updated SGT Tag: {}".format(sgtitem['sgName']))
+
+    @aetest.test
+    def test9_delete_sgts(self, dnac_obj):
+        logging.info("Deleting all SGTs from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["DELETESGTLIST"]:
+            with steps.start("Deleting SGT with SGT inputs",continue_= True) as step:
+                with step.start("Deleting SGT: {}".format(sgtitem["sgName"]),continue_= True):
+                    if not dnac_obj.securitygroups.deleteSecurityGroupByName(sgtitem["sgName"])['status']:
+                        step.failed("Failed deleting sgt:{}".format(sgtitem["sgName"]))
+                    else:
+                        dnac_obj.securitygroups.pushAndVerifySecurityGroups()
+                        logging.info("Deleted SGT: {}".format(sgtitem['sgName']))
+
+    @aetest.test
+    def test10_get_sgtsummary(self, dnac_obj):
+        logging.info("Getting SGTs summary details")
+        logging.info(dnac_obj.securitygroups.get_securityGroup_summary())
 

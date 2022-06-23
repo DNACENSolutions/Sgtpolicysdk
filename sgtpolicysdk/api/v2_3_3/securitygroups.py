@@ -96,9 +96,9 @@ class SecurityGroups(object):
         self.log.info(taskStatus)
         if (taskStatus['isError']):
             self.log.error("Creating a new security group failed:{0}".format(taskStatus['failureReason']))
-            return {'status':False, "failureReason":"Creating security group {} failed:{}".format(taskStatus['failureReason'])}
+            return {'status':False, "failureReason":"Creating security group {} failed:{}".format(sgName,taskStatus['failureReason'])}
         else:
-            self.log.info("#----SUCCESSFULLY CREATED SCALABLE GROUP //{}//----#".format(sgName))
+            self.log.info("#---- SUCCESSFULLY CREATED SECURITY GROUP {} ----#".format(sgName))
         if not virtualNetworks:
             virtualNetworks = ['DEFAULT_VN']
         return self.addSecurityGroupToVirtualNetwork(sgName, virtualNetworks)

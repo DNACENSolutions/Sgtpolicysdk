@@ -35,6 +35,7 @@ logger = logging.getLogger("SecurityGroups")
 #Default Timers
 DEFAULT_SGT_TIMEOUT=60
 DEFAULT_TASK_COMPLETION_TIMEOUT=120
+DEFAULT_SUMMARY_TIMEOUT=240
 
 #URLs
 PATH_SG = '/v2/data/customer-facing-service/scalablegroup/access'
@@ -97,10 +98,10 @@ class SecurityGroups(object):
         self.log.info(taskStatus)
         if (taskStatus['isError']):
             self.log.error("Creating a new security group failed:{0}".format(taskStatus['failureReason']))
-            return {'status':False, "failureReason":"Creating security group {} failed:{}".format(taskStatus['failureReason']),
+            return {'status':False, "failureReason":"Creating security group {} failed:{}".format(sgName,taskStatus['failureReason']),
                     'TaskStatus':taskStatus}
         else:
-            self.log.info("#----SUCCESSFULLY CREATED SCALABLE GROUP //{}//----#".format(sgName))
+            self.log.info("#----SUCCESSFULLY CREATED SECURITY GROUP //{}//----#".format(sgName))
         if not virtualNetworks:
             virtualNetworks = ['DEFAULT_VN']
         return self.addSecurityGroupToVirtualNetwork(sgName, virtualNetworks)
@@ -138,7 +139,7 @@ class SecurityGroups(object):
             return {'status':False, 'failureReason':'Not all virtualNetworks provided, exist in DNAC, Create VirtualNetwork in DNAC first'}
         response = self.putVirtualNetwork(json=updatedVnData)
         self.log.info(response)
-        taskStatus = self._task.wait_for_task_complete(response, timeout=240)
+        taskStatus = self._task.wait_for_task_complete(response, timeout=DEFAULT_SUMMARY_TIMEOUT)
         if (taskStatus['isError']):
             self.log.error("Add sg to vn failed:{0}".format(taskStatus['failureReason']))
             return {'status':False, 
@@ -159,7 +160,8 @@ class SecurityGroups(object):
             securityGroupTag(str): Tag number of Security Group
             description(str): Description of Security Group
             propagateToAci(bool): True or False
-            virtualNetworks: List of Virtual Network names
+            virtualNetworks(list): List of Virtual Network names
+                                  
         Raises:
             TypeError: If the parameter types are incorrect.        
         '''
@@ -180,7 +182,7 @@ class SecurityGroups(object):
                     "securityGroupTag":response_sg['response'][0]['securityGroupTag'],
                     "scalableGroupType":response_sg['response'][0]['scalableGroupType'],
                     "vnAgnostic":response_sg['response'][0]['vnAgnostic'],
-                    "propagateToAci":response_sg['response'][0]['propagateToAci']
+                    "propagateToAci":response_sg['response'][0]['propagateToAci'],
                 }
         if securityGroupTag:
             sgt_data["securityGroupTag"] = securityGroupTag
@@ -188,8 +190,9 @@ class SecurityGroups(object):
             sgt_data["description"] = description
         if propagateToAci:
             sgt_data["propagateToAci"] = propagateToAci
+
         sg_response = self.put_securityGroup(json=[sgt_data])
-        taskStatus = self._task.wait_for_task_complete(sg_response, timeout=240)
+        taskStatus = self._task.wait_for_task_complete(sg_response, timeout=DEFAULT_SUMMARY_TIMEOUT)
         self.log.info(taskStatus)
         if (taskStatus['isError']):
             self.log.error("Updating security group failed:{0}".format(taskStatus['failureReason']))
@@ -320,15 +323,14 @@ class SecurityGroups(object):
         response_sg = self.get_securityGroup(params=params)
         sgt_data= {
                     "id":response_sg['response'][0]['id'],
-                    "resourceVersion":response_sg['response'][0]['resourceVersion'],
+                    "vnAgnostic":response_sg['response'][0]['vnAgnostic'],
                     "name":response_sg['response'][0]['name'],
                     "description":response_sg['response'][0]['description'],
                     "securityGroupTag":response_sg['response'][0]['securityGroupTag'],
                     "scalableGroupType":response_sg['response'][0]['scalableGroupType'],
                     "isDeleted":True
                 }
-        
-        delete_response = self.put_securityGroup(json=sgt_data)
+        delete_response = self.put_securityGroup(json=[sgt_data])
         self.log.debug(delete_response)
         taskStatus = self._task.wait_for_task_complete(delete_response)
         self.log.info(taskStatus)
@@ -338,7 +340,7 @@ class SecurityGroups(object):
                     'failureReason':'Deleting security group {} failed:{}'.format(name,taskStatus['failureReason']),
                     'TaskStatus': taskStatus
                    }
-        self.log.info("#----SUCCESSFULLY DELETED Security Group {}----#".format(sg_name))
+        self.log.info("#----SUCCESSFULLY DELETED Security Group {}----#".format(name))
         return {"status" : True,'TaskStatus': taskStatus}
 
     def deleteSecurityGroupByTag(self, securityGroupTag):
@@ -359,7 +361,7 @@ class SecurityGroups(object):
         response_sg = self.get_securityGroup(params=params)
         sgt_data= {
                     "id":response_sg['response'][0]['id'],
-                    "resourceVersion":response_sg['response'][0]['resourceVersion'],
+                    "vnAgnostic":response_sg['response'][0]['vnAgnostic'],
                     "name":response_sg['response'][0]['name'],
                     "description":response_sg['response'][0]['description'],
                     "securityGroupTag":response_sg['response'][0]['securityGroupTag'],
@@ -367,7 +369,7 @@ class SecurityGroups(object):
                     "isDeleted":True
                 }
         
-        delete_response = self.put_securityGroup(json=sgt_data)
+        delete_response = self.put_securityGroup(json=[sgt_data])
         self.log.debug(delete_response)
         taskStatus = self._task.wait_for_task_complete(delete_response)
         self.log.info(taskStatus)
@@ -376,7 +378,7 @@ class SecurityGroups(object):
             return {"status" : False, 'failureReason':'Deleting security group {} failed:{}'.format(name,taskStatus['failureReason']),
                     'TaskStatus': taskStatus
                    }
-        self.log.info("#----SUCCESSFULLY DELETED Security Group {}----#".format(sg_name))
+        self.log.info("#----SUCCESSFULLY DELETED Security Group by tag {}----#".format(securityGroupTag))
         return {"status" : True,'TaskStatus': taskStatus}
 
     #Deploy Functions
@@ -510,26 +512,6 @@ class SecurityGroups(object):
         self.log.info("Response {}".format(response))
         return response
 
-    def delete_all_securityGroups(self, **kwargs):
-        '''
-        DELETE request for all Security Group
-
-        Args:
-            kwargs (dict): additional parameters to be passed.
-        Returns:
-            dict: response of api call.
-        Raises:
-            ApiClientException: when unexpected query parameters are passed.
-        '''
-        url = PATH_SG
-        method = 'DELETE'
-        response = self._session.api_switch_call(method=method,
-                                                      resource_path=url,
-                                                      **kwargs)
-        self.log.info("Method {} \nURL {} \nData {}".format(method, url, kwargs))
-        self.log.info("Response {}".format(response))
-        return response
-
     def get_securityGroup_by_instance_uuid(self,sgt_instance_uuid,**kwargs):
         '''
         GET request for Security Group by instance id
@@ -544,7 +526,7 @@ class SecurityGroups(object):
         '''
         check_type(sgt_instance_uuid,basestring)
 
-        url = PATH_SG + "/{sgt_instance_uuid}"
+        url = PATH_SG + "/"+sgt_instance_uuid
         method = 'GET'
         response = self._session.api_switch_call(method=method,
                                                       resource_path=url,
@@ -614,27 +596,6 @@ class SecurityGroups(object):
         response = self._session.api_switch_call(method=method,resource_path=url,**kwargs)
         self.log.info("Response {}".format(response))
         return response
-
-    def get_securityGroup_byparams(self,**kwargs):
-        '''
-        GET request for Security Group by params
-
-        Args:
-            kwargs (dict): additional parameters to be passed.
-        Returns:
-            dict: response of api call.
-        Raises:
-            ApiClientException: when unexpected query parameters are passed.
-        '''
-        url = PATH_SG
-        method = 'GET'
-        response = self._session.api_switch_call(method=method,
-                                                      resource_path=url,
-                                                      params = kwargs)
-        self.log.info("Response {}".format(response))
-        sgid = response['response'][0]['id']
-        self.log.info(" securityGroup uuid {}".format(sgid))
-        return sgid
 
     #============================Virtual Networks Functions=======================
     def getVirtualNetwork(self, **kwargs):
