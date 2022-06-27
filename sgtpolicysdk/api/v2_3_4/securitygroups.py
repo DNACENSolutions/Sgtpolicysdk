@@ -174,6 +174,8 @@ class SecurityGroups(object):
         self.log.info("Updating security group")
         params= { "name" : name }
         response_sg = self.get_securityGroup(params=params)
+        if not response_sg['response']:
+            {"status" : False,'failureReason':'No response from get operation'}
         sgt_data= {
                     "id":response_sg['response'][0]['id'],
                     "resourceVersion":response_sg['response'][0]['resourceVersion'],
@@ -321,6 +323,8 @@ class SecurityGroups(object):
 
         params= { "name" : name }
         response_sg = self.get_securityGroup(params=params)
+        if not response_sg['response']:
+            {"status" : False,'failureReason':'No response from get operation'}
         sgt_data= {
                     "id":response_sg['response'][0]['id'],
                     "vnAgnostic":response_sg['response'][0]['vnAgnostic'],
@@ -359,6 +363,8 @@ class SecurityGroups(object):
 
         params = { 'securityGroupTag' : securityGroupTag }
         response_sg = self.get_securityGroup(params=params)
+        if not response_sg['response']:
+            {"status" : False,'failureReason':'No response from get operation'}
         sgt_data= {
                     "id":response_sg['response'][0]['id'],
                     "vnAgnostic":response_sg['response'][0]['vnAgnostic'],

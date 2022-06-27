@@ -92,7 +92,7 @@ class SGTPolicy(object):
         
         self.log.info("Start to create policy from {} to {} with contract {}".format(producer_name, consumer_name, contract_name))
         self.log.info("get contract info")
-        contract_response = self._contract.get_contractAccessByName(contract_name)
+        contract_response = self._contract.get_contractAccessByName(contract_name)['response']
         for response in contract_response["response"]:
             if response["name"] == contract_name:
                 contract_id = str(response["id"])
@@ -104,7 +104,7 @@ class SGTPolicy(object):
             if SG["name"] == consumer_name:
                 consumer_id = str(SG["id"])
 
-        access_policy_response = self.get_policyaccess()
+        access_policy_response = self.get_policyAccess()
         policy_scope_id = access_policy_response["response"][0]["policyScope"]
 
         self.log.info("Inside create new policy the Idref of the contract is: {0}".format(contract_id))
@@ -128,14 +128,14 @@ class SGTPolicy(object):
             "priority": 65535,
             "name": policy_name
             }]
-        policy_response = self.post_policyaccess(json=sgtpolicy_data)
+        policy_response = self.post_policyAccess(json=sgtpolicy_data)
         taskStatus = self._task.wait_for_task_complete(policy_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
         self.log.info(taskStatus)
         if (taskStatus['isError']):
             self.log.error("Creating policy failed:{0}".format(taskStatus['failureReason']))
             return {'status':False, "failureReason":"Creating Policy {} failed:{}".format(taskStatus['failureReason']),'TaskStatus': taskStatus}
         self.log.info("######################################################################################################")
-        self.log.info("#----SUCCESSFULLY CREATED TRUSTSEC POLICY from {} to {} with contract {}----#".format(producer_name, consumer_name, contract_name))
+        self.log.info("#----SUCCESSFULLY CREATED SGT POLICY from {} to {} with contract {}----#".format(producer_name, consumer_name, contract_name))
         self.log.info("######################################################################################################")
         return {'status':True,'TaskStatus': taskStatus}
 
@@ -161,6 +161,8 @@ class SGTPolicy(object):
         contract_id = ""
 
         sg_response = self._securitygroup.get_securityGroup()
+        if not sg_response['response']:
+            return {"status": False,'failureReason': 'Not got SGT details'}    
         for sg in sg_response["response"]:
             if(sg["name"] == src_sg_name):
                 src_sg_id = str(sg["id"])
@@ -168,7 +170,7 @@ class SGTPolicy(object):
             if(sg["name"] == dst_sg_name):
                 dst_sg_id = str(sg["id"])
                 self.log.info(dst_sg_id)
-        policy_response = self.get_policyaccess()
+        policy_response = self.get_policyAccess()
         for aca in policy_response["response"]:
             if dst_sg_id in aca["consumer"]["scalableGroup"][0]["idRef"] and src_sg_id in aca["producer"]["scalableGroup"][0]["idRef"]:
                 policy_id = aca["id"]
@@ -206,7 +208,7 @@ class SGTPolicy(object):
                 "consumer": {"scalableGroup": [{"idRef":dst_sg_id}]}
                 }]
 
-        policy_response = self.put_policyaccess(json=sgtpolicy_data)
+        policy_response = self.put_policyAccess(json=sgtpolicy_data)
         taskStatus = self._task.wait_for_task_complete(policy_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
         self.log.info(taskStatus)
         if (taskStatus['isError']):
@@ -214,7 +216,7 @@ class SGTPolicy(object):
             return {'status':False,
                     'failureReason':'Failed in updating Policy with reason: {}'.format(taskStatus['failureReason']),'TaskStatus': taskStatus}
         self.log.info("###############################################################################################")
-        self.log.info("#----SUCCESSFULLY UPDATED TRUSTSEC POLICY for {} to {}----#".format(src_sg_name, dst_sg_name))
+        self.log.info("#----SUCCESSFULLY UPDATED SGT POLICY for {} to {}----#".format(src_sg_name, dst_sg_name))
         self.log.info("###############################################################################################")
         return {"status": True,'TaskStatus': taskStatus}
        
@@ -236,6 +238,8 @@ class SGTPolicy(object):
         src_sg_id = ""
         dst_sg_id = ""
         sg_response = self._securitygroup.get_securityGroup()
+        if not sg_response['response']:
+            return {"status": False,'failureReason': 'Not got SGT details'}
         for sg in sg_response["response"]:
             if(sg["name"] == src_sg_name):
                 src_sg_id = str(sg["id"])
@@ -244,7 +248,7 @@ class SGTPolicy(object):
                 dst_sg_id = str(sg["id"])
                 self.log.info("Destination name ref id {}".format(dst_sg_id))
 
-        policy_response = self.get_policyaccess()
+        policy_response = self.get_policyAccess()
         if src_sg_id == '' or dst_sg_id == '' :
             self.log.error("The source or destination security group is not found")
         for aca in policy_response["response"]:
@@ -256,7 +260,7 @@ class SGTPolicy(object):
             self.log.error("The policy is not found")
             return {'status':False}
 
-        delete_response = self.delete_policyaccessById(delete_id)
+        delete_response = self.delete_policyAccessById(delete_id)
         self.log.info(delete_response)
         taskStatus = self._task.wait_for_task_complete(delete_response, timeout=DEFAULT_TASK_COMPLETION_TIMEOUT)
         self.log.info(taskStatus)
@@ -264,7 +268,7 @@ class SGTPolicy(object):
             self.log.error("Deleting policy failed:{0}".format(taskStatus['failureReason']))
             return {'status':False, "failureReason":"Deleting Policy {} failed:{}".format(taskStatus['failureReason']),'TaskStatus': taskStatus}
         self.log.info("###############################################################################################")
-        self.log.info("#----SUCCESSFULLY DELETED TRUSTSEC POLICY from {} to {}----#".format(src_sg_name, dst_sg_name))
+        self.log.info("#----SUCCESSFULLY DELETED SGT POLICY from {} to {}----#".format(src_sg_name, dst_sg_name))
         self.log.info("###############################################################################################")
         return {'status':True,'TaskStatus': taskStatus}
 
@@ -279,7 +283,7 @@ class SGTPolicy(object):
         """
         self.log.info("Start to count policies in DNAC")
         params = {'gbpSummary': 'true'}
-        policy_response = self.get_policyaccess_summary(params=params, timeout=DEFAULT_SUMMARY_TIMEOUT)
+        policy_response = self.get_policyAccessSummary(params=params, timeout=DEFAULT_SUMMARY_TIMEOUT)
         policy_response_summary = policy_response["response"][0]
         count = len(policy_response_summary["acaGBPSummary"])
         self.log.info("Total Policy count in DNAC {}".format(count))
@@ -297,7 +301,7 @@ class SGTPolicy(object):
         self.log.info("Start to get all policies in DNAC")
         policylist = []
         params = {'gbpSummary': 'true'}
-        policy_response = self.get_policyaccess_summary(params=params)
+        policy_response = self.get_policyAccessSummary(params=params)
         policy_response_summary = policy_response["response"][0]
 
         for policy in policy_response_summary["acaGBPSummary"]:
@@ -323,7 +327,7 @@ class SGTPolicy(object):
         check_type(expect,bool)
 
         self.log.info("Start to check policy list in DNAC")
-        policylist_aca = self.get_all_policy()
+        policylist_aca = self.getAllPolicyName()['PolicyNameList']
 
         self.log.info("Policy list to check: {}".format(policy_list))
         self.log.info("Policy list in ACA DNAC: {}".format(policylist_aca))

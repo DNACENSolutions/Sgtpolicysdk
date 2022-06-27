@@ -43,6 +43,7 @@ def main():
     script_name1 = os.path.join(BASE_RUN_PATH,'tests/testscripts/sgttest.py')
     script_name2 = os.path.join(BASE_RUN_PATH,'tests/testscripts/contracttest.py')
     script_name3 = os.path.join(BASE_RUN_PATH,'tests/testscripts/policytest.py')
+    
     task1 = Task(testscript = script_name1,
                     cluster_inputs=clusterinput,
                     test_inputs=testinputs,
@@ -51,18 +52,37 @@ def main():
     # start the task
     task1.start()
     time.sleep(1)
-    '''
-    task2 = Task(testscript = script_name2,
-                    cluster_inputs=clusterinput,
-                    test_inputs=testinputs,
-                    taskid = 'sgttest-{}'.format(script_name2.split('/')[-1]))
-    job_list.append(task2)
-    # start the task
-    task2.start()
-    time.sleep(1)
-    '''
+
     # wait for a max runtime of 60*5 seconds = 5 minutes
     for task1 in job_list:
         result = task1.wait(MAX_TASK_WAIT_TIME)
         print(result)
-    
+
+    task2 = Task(testscript = script_name2,
+                    cluster_inputs=clusterinput,
+                    test_inputs=testinputs,
+                    taskid = 'Accesscontracttest-{}'.format(script_name2.split('/')[-1]))
+    job_list.append(task2)
+    # start the task
+    task2.start()
+    time.sleep(1)
+
+    # wait for a max runtime of 60*5 seconds = 5 minutes    
+    for task2 in job_list:
+        result = task2.wait(MAX_TASK_WAIT_TIME)
+        print(result)
+   
+    task3 = Task(testscript = script_name3,
+                    cluster_inputs=clusterinput,
+                    test_inputs=testinputs,
+                    taskid = 'SGTPolicytest-{}'.format(script_name3.split('/')[-1]))
+    job_list.append(task3)
+    # start the task
+    task3.start()
+    time.sleep(1)
+
+    # wait for a max runtime of 60*5 seconds = 5 minutes    
+    for task3 in job_list:
+        result = task3.wait(MAX_TASK_WAIT_TIME)
+        print(result)    
+

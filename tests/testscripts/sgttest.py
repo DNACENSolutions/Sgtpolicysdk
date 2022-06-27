@@ -73,7 +73,7 @@ class CommonSetup(aetest.CommonSetup):
         dnac_obj.testinput = testinput
         self.parent.parameters['dnac_obj'] = dnac_obj
 
-class Test_create_all_sgts(aetest.Testcase):
+class Test_all_sgts(aetest.Testcase):
     @aetest.test
     def test1_create_sgts(self, dnac_obj):
         logging.info("Creating all SGTs from the input")
@@ -167,7 +167,20 @@ class Test_create_all_sgts(aetest.Testcase):
                         logging.info("Updated SGT Tag: {}".format(sgtitem['sgName']))
 
     @aetest.test
-    def test9_delete_sgts(self, dnac_obj):
+    def test9_update_sgts_description(self, dnac_obj):
+        logging.info("Update all SGTs description from the input")
+        steps=Steps()
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["UPDATESGTDESLIST"]:
+            with steps.start("Updating SGT description with SGT inputs",continue_= True) as step:
+                with step.start("Updating SGT description: {}".format(sgtitem["sgName"]),continue_= True):
+                    if not dnac_obj.securitygroups.updateSecurityGroup(sgtitem["sgName"],description=sgtitem["description"])['status']:
+                        step.failed("Failed creating sgt description: {}".format(sgtitem["sgName"]))
+                    else:
+                        dnac_obj.securitygroups.pushAndVerifySecurityGroups()
+                        logging.info("Updated SGT description: {}".format(sgtitem['sgName']))
+
+    @aetest.test
+    def test10_delete_sgts(self, dnac_obj):
         logging.info("Deleting all SGTs from the input")
         steps=Steps()
         for sgtitem in dnac_obj.testinput["SGTINPUTS"]["DELETESGTLIST"]:
@@ -180,7 +193,7 @@ class Test_create_all_sgts(aetest.Testcase):
                         logging.info("Deleted SGT: {}".format(sgtitem['sgName']))
 
     @aetest.test
-    def test10_get_sgtsummary(self, dnac_obj):
+    def test11_get_sgtsummary(self, dnac_obj):
         logging.info("Getting SGTs summary details")
         logging.info(dnac_obj.securitygroups.get_securityGroup_summary())
 

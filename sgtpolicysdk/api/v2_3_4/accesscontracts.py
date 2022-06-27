@@ -138,6 +138,8 @@ class AccessContracts(object):
         self.log.info("Update contract")
         params = {"name" : contract_name}
         contract_response = self.get_contractAccess(params=params)
+        if not contract_response['response']:
+            return {'status':False,'failureReason':"Not got output from get operation"}
         ac_data = {
             "id": contract_response['response'][0]['id'],
             "name":contract_response['response'][0]['name'],
@@ -257,20 +259,19 @@ class AccessContracts(object):
         self.log.info("Start to check contract list in DNAC")
         missing_list= []
         exist_list = []
-        contractlist_aca = self.getAllContractName()
+        contractlist_aca = self.getAllContractName()['ContractNameList']
         for name in contract_list:
             if name in contractlist_aca:
                 exist_list.append(name)
-                continue
             else:
                 missing_list.append(name)
         self.log.info("Contracts to check {}".format(contract_list))
         self.log.info("All contract names in DNAC {}".format(contractlist_aca))
-
+ 
         if expect:
             if len(missing_list)==0:
                 self.log.info("#####################################################")
-                self.log.info("#----Contracts exists in DNAC {}----#".format(contract_list))
+                self.log.info("#----ALL Contracts exists in DNAC {}----#".format(contract_list))
                 self.log.info("#####################################################")
                 return True
             else:
@@ -366,7 +367,11 @@ class AccessContracts(object):
         check_type(contract_name,basestring)
 
         params = { "name" : contract_name }
-        return self.get_contractAccess(params=params)
+        response_ac = self.get_contractAccess(params=params)
+        if not response_ac['response']:
+            return {'status':False,'failureReason':"Not got output from get operation"}
+        else:
+            return {'status': True,'response':response_ac}
 
     def post_contractAccess(self,url =None,**kwargs):
         '''

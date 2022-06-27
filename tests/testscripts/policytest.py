@@ -72,3 +72,69 @@ class CommonSetup(aetest.CommonSetup):
         							 password=dnac_config['password'],version=dnac_config['version'])
         dnac_obj.testinput = testinput
         self.parent.parameters['dnac_obj'] = dnac_obj
+
+class Test_all_sgt_policy(aetest.Testcase):
+    @aetest.test
+    def test1_create_sgtpolicy(self, dnac_obj):
+        logging.info("Creating SGT Policies")
+        steps=Steps()
+        for sgtpolicy_data in dnac_obj.testinput["POLICYINPUTS"]["CREATEPOLICYLIST"]:
+            with steps.start("Creating SGT Policy",continue_= True) as step:
+                with step.start("Creating SGT Policy: {}".format(sgtpolicy_data["policy_name"]),continue_= True):
+                    if not dnac_obj.sgtpolicy.createSecurityGroupPolicy(sgtpolicy_data["policy_name"],sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"],sgtpolicy_data["accessContract"])['status']:
+                        step.failed("Failed creating SGT Policy:{}".format(sgtpolicy_data["policy_name"]))
+                    else:
+                        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
+                        logging.info("Created SGT Policy: {}".format(sgtpolicy_data["policy_name"]))
+                        
+    @aetest.test
+    def test2_update_sgtpolicy(self, dnac_obj):
+        logging.info("Updating SGT Policy from the input")
+        steps=Steps()
+        for sgtpolicy_data in dnac_obj.testinput["POLICYINPUTS"]["UPDATEPOLICYLIST"]:
+            with steps.start("Updating SGT Policy ",continue_= True) as step:
+                with step.start("Updating SGT Policy {} - {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]),continue_= True):
+                    if not dnac_obj.sgtpolicy.update_policy(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"],new_contract_name=sgtpolicy_data["accessContract"])['status']:
+                        step.failed("Failed Updating Policy {} - {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]))
+                    else:
+                        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
+                        logging.info("Updated SGT Policy {} - {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"])) 
+
+    @aetest.test
+    def test3_get_sgtpolicy_count(self, dnac_obj):
+        logging.info("Get Total SGT Policy count")
+        totalpolicycount = dnac_obj.sgtpolicy.getPolicyCount()
+        logging.info(totalpolicycount)
+        
+    @aetest.test
+    def test4_check_policy_exist_in_dnac(self, dnac_obj):
+        logging.info("Verify all policy from the input present in DNAC")
+        result = dnac_obj.sgtpolicy.is_policy_exist_in_dnac(dnac_obj.testinput["POLICYINPUTS"]["POLICYCHECKLIST"])
+        logging.info(result)
+
+    @aetest.test
+    def test5_get_all_policy_names(self, dnac_obj):
+        logging.info("Get all Policy names present in DNAC")
+        result = dnac_obj.sgtpolicy.getAllPolicyName()
+        logging.info(result)
+        
+    @aetest.test
+    def test6_get_sgtpolicysummary(self, dnac_obj):
+        logging.info("Getting SGT Policy summary details")
+        result = dnac_obj.sgtpolicy.get_policyAccessSummary()
+        logging.info(result)        
+
+    @aetest.test
+    def test7_delete_sgtpolicy(self, dnac_obj):
+        logging.info("Deleting all SGT Policy from the input")
+        steps=Steps()
+        for sgtpolicy_data in dnac_obj.testinput["POLICYINPUTS"]["DELETEPOLICYLIST"]:
+            with steps.start("Deleting SGT Policies",continue_= True) as step:
+                with step.start("Deleting SGT Policy from {} to {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]),continue_= True):
+                    if not dnac_obj.sgtpolicy.delete_policy(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"])['status']:
+                        step.failed("Failed deleting SGT Policy from {} to {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]))
+                    else:
+                        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
+                        logging.info("Deleted SGT Policy from {} to {}".format(sgtpolicy_data['srcSGName'],sgtpolicy_data["dstSGName"]))
+
+

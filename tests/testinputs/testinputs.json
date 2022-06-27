@@ -1,31 +1,37 @@
 {
 	"SGTINPUTS": {
 		"CREATESGTLIST": [
-			{"sgName":"SGNAME15", "sgTag": 11001},
-			{"sgName":"SGNAME16", "sgTag": 11002}
+			{"sgName":"SGNAME5", "sgTag": 11001},
+			{"sgName":"SGNAME6", "sgTag": 12002}
 		],
                 "CREATESGTVNLIST": [
-                        {"sgName":"SGNAME17", "sgTag": 41001,"virtualNetworks": ["DEFAULT_VN","test1234"]},
-                        {"sgName":"SGNAME18", "sgTag": 41002,"virtualNetworks": ["test1234","test123456"]}
+                        {"sgName":"SGNAME11", "sgTag": 41001,"virtualNetworks":["DEFAULT_VN","test1234"]},
+                        {"sgName":"SGNAME21", "sgTag": 41002,"virtualNetworks":["test1234","test123456"]}
                 ],
                 "GETSGTLIST":[
                         {"sgName":"Production_Servers"},
-                        {"sgName":"PCI_Servers"}
+                        {"sgName":"PCI_Servers"},
+                        {"sgName":"SGNAME5"},
+                        {"sgName":"SGNAME6"}
                 ],
-                "SECURITYGROUPLIST":["IPNetGroup2011","IPNetGroup2012","IPNetGroup2013","Contractors"],
+                "SECURITYGROUPLIST":["IPNetGroup2011","IPNetGroup2012","IPNetGroup2013","Contractors","SGNAME11","SGNAME21"],
 		"UPDATESGTTAGLIST": [
-                        {"sgName":"SGNAME17", "sgTag": 21001},
-                        {"sgName":"SGNAME18", "sgTag": 21002}
+                        {"sgName":"SGNAME11", "sgTag": 21001},
+                        {"sgName":"SGNAME21", "sgTag": 21002}
 		],
+                "UPDATESGTDESLIST": [
+                        {"sgName":"SGNAME11", "description": "Updated description of 11"},
+                        {"sgName":"SGNAME21", "description": "Updated description of 21"}
+                ],
                 "UPDATESGTVNLIST": [
-                        {"sgName":"SGNAME15", "virtualNetworks": ["test1234"]},
-                        {"sgName":"SGNAME16", "virtualNetworks": ["test123456"]}
+                        {"sgName":"SGNAME5", "virtualNetworks":["test1234"]},
+                        {"sgName":"SGNAME6", "virtualNetworks":["test123456"]}
                 ],
                 "DELETESGTLIST":[
-                        {"sgName":"SGNAME15"},
-                        {"sgName":"SGNAME16"},
-                        {"sgName":"SGNAME17"},
-                        {"sgName":"SGNAME18"}
+                        {"sgName":"SGNAME5"},
+                        {"sgName":"SGNAME6"},
+                        {"sgName":"SGNAME11"},
+                        {"sgName":"SGNAME21"}
                 ]
 	},
 	"CONTRACTINPUTS": {
@@ -35,27 +41,59 @@
                   	"applicationName":"wap-vcal-s",
                   	"dstNetworkIdentities":[{"protocol":"UDP","ports":"9207"},
                                           {"protocol":"TCP","ports":"9207"}], 
-                  	"logging": "OFF"}]}
+                  	"logging": "OFF"}]},
+                        {"contract_name":"CONTRACT2","description":"SAMPLE Contract2",
+                                "contract_data" :[{"access": "DENY",
+                        "applicationName":"decbsrv",
+                        "dstNetworkIdentities":[{"protocol":"UDP","ports":"579"},
+                                          {"protocol":"TCP","ports":"579"}],
+                        "logging": "OFF"}]}
 		],
-		"UPDATECONTRACTLLIST": [
-		     
+		"UPDATECONTRACTLISTDES": [
+		        {"contract_name":"CONTRACT1","description":"Update SAMPLE Contract1"},
+                        {"contract_name":"CONTRACT2","description":"Update SAMPLE Contract2"}	
 		],
-                "DELETECONTRACTLLIST": [
-                       
-                ]          
-
+                "UPDATECONTRACTLISTDATA": [
+                        {"contract_name":"CONTRACT1","contract_data" :[{"access": "DENY",
+                        "applicationName":"decbsrv",
+                        "dstNetworkIdentities":[{"protocol":"UDP","ports":"579"},
+                                          {"protocol":"TCP","ports":"579"}],
+                        "logging": "OFF"}]},
+                        {"contract_name":"CONTRACT2","contract_data" :[{"access": "DENY",
+                        "applicationName":"secure-smtp",
+                        "dstNetworkIdentities":[{"protocol":"UDP","ports":"465"},
+                                          {"protocol":"TCP","ports":"465"}],
+                        "logging": "OFF"}]}
+                ],
+                "GETCONTRACTLLIST": [
+                        {"contract_name":"solutiontest1"},
+                        {"contract_name":"test"},
+                        {"contract_name":"CONTRACT1"},
+                        {"contract_name":"CONTRACT2"}
+                ],
+                "CONTRACTCHECKLIST":["CONTRACT1","CONTRACT2","Permit IP","Deny IP"],
+                "DELETECONTRACTLIST": [
+                        {"contract_name":"CONTRACT1"},
+                        {"contract_name":"CONTRACT2"}
+                ]
 	},
 	"POLICYINPUTS": {
 		"CREATEPOLICYLIST" : [
-			[
-				{"srcSGName":"SGNAME1", "dstSGNames":"SGNAME2", "accessContract": "CONTRACT1"}
-			]
+		 {"policy_name":"test1","srcSGName":"SGNAME1", "dstSGName":"SGNAME4", "accessContract": "test41"},
+                 {"policy_name":"test2","srcSGName":"SGNAME4", "dstSGName":"SGNAME1", "accessContract": "test42"}
 		],
 		"UPDATEPOLICYLIST" : [
-			
+                {"srcSGName":"SGNAME1", "dstSGName":"SGNAME4", "accessContract": "test"},
+                {"srcSGName":"SGNAME4", "dstSGName":"SGNAME1", "accessContract": "solutiontest1"}	
 		],
+                "POLICYCHECKLIST" : [
+                {"name": "Auditors-BYOD", "contract": "testacl"},
+                {"name": "Auditors-IPNetGroup2010", "contract": "Deny IP"},
+                {"name": "Employees-Auditors", "contract": "Deny IP"}
+                ],
                 "DELETEPOLICYLIST" : [
-
+                {"srcSGName":"SGNAME1", "dstSGName":"SGNAME4"},
+                {"srcSGName":"SGNAME4", "dstSGName":"SGNAME1"}
                 ]                
 	}
 }
