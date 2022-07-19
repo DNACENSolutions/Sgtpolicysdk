@@ -68,37 +68,47 @@ class CommonSetup(aetest.CommonSetup):
 
         with open(test_inputs) as fh_t:
             testinput = json.load(fh_t)
-        dnac_obj = DNACenterSGTPolicyAPI(server=dnac_config['server'],username=dnac_config['username'],
-        							 password=dnac_config['password'],version=dnac_config['version'])
+        dnac_obj = DNACenterSGTPolicyAPI(server=dnac_config['server'],\
+                   username=dnac_config['username'],password=dnac_config\
+                   ['password'],version=dnac_config['version'])
         dnac_obj.testinput = testinput
         self.parent.parameters['dnac_obj'] = dnac_obj
 
 class Test_all_sgt_policy(aetest.Testcase):
     @aetest.test
-    def test1_create_sgtpolicy(self, dnac_obj):
+    def test1_create_sgtpolicy(self, steps, dnac_obj):
         logging.info("Creating SGT Policies")
-        steps=Steps()
         for sgtpolicy_data in dnac_obj.testinput["POLICYINPUTS"]["CREATEPOLICYLIST"]:
-            with steps.start("Creating SGT Policy",continue_= True) as step:
-                with step.start("Creating SGT Policy: {}".format(sgtpolicy_data["policy_name"]),continue_= True):
-                    if not dnac_obj.sgtpolicy.createSecurityGroupPolicy(sgtpolicy_data["policy_name"],sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"],sgtpolicy_data["accessContract"])['status']:
-                        step.failed("Failed creating SGT Policy:{}".format(sgtpolicy_data["policy_name"]))
-                    else:
-                        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
-                        logging.info("Created SGT Policy: {}".format(sgtpolicy_data["policy_name"]))
-                        
+            with steps.start("Creating SGT Policy {}-{},contract:{}".format\
+                            (sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]\
+                            ,sgtpolicy_data["accessContract"]),continue_= True) as step:
+                if not dnac_obj.sgtpolicy.createSecurityGroupPolicy(sgtpolicy_data\
+                             ["policy_name"],sgtpolicy_data["srcSGName"],sgtpolicy_data\
+                             ["dstSGName"],sgtpolicy_data["accessContract"])['status']:
+                    step.failed("Failed creating SGT Policy:{}".format\
+                                                       (sgtpolicy_data["policy_name"]))
+                else:
+                    step.passed("Created SGT Policy: {}".format\
+                                                       (sgtpolicy_data["policy_name"]))
+        logging.info("Deploy after Test 3 create policy")
+        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
+
     @aetest.test
-    def test2_update_sgtpolicy(self, dnac_obj):
+    def test2_update_sgtpolicy(self, steps, dnac_obj):
         logging.info("Updating SGT Policy from the input")
-        steps=Steps()
         for sgtpolicy_data in dnac_obj.testinput["POLICYINPUTS"]["UPDATEPOLICYLIST"]:
-            with steps.start("Updating SGT Policy ",continue_= True) as step:
-                with step.start("Updating SGT Policy {} - {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]),continue_= True):
-                    if not dnac_obj.sgtpolicy.update_policy(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"],new_contract_name=sgtpolicy_data["accessContract"])['status']:
-                        step.failed("Failed Updating Policy {} - {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]))
-                    else:
-                        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
-                        logging.info("Updated SGT Policy {} - {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"])) 
+            with steps.start("Updating SGT Policy {}-{}".format(sgtpolicy_data["srcSGName"]\
+                                     ,sgtpolicy_data["dstSGName"]),continue_= True) as step:
+                if not dnac_obj.sgtpolicy.update_policy(sgtpolicy_data["srcSGName"],\
+                         sgtpolicy_data["dstSGName"],new_contract_name=sgtpolicy_data\
+                                                         ["accessContract"])['status']:
+                    step.failed("Failed Updating Policy {}-{}".format(sgtpolicy_data\
+                                                 ["srcSGName"],sgtpolicy_data["dstSGName"]))
+                else:
+                    step.passed("Updated SGT Policy {}-{}".format(sgtpolicy_data\
+                                                 ["srcSGName"],sgtpolicy_data["dstSGName"])) 
+        logging.info("Deploy after Test 4 update policy")
+        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
 
     @aetest.test
     def test3_get_sgtpolicy_count(self, dnac_obj):
@@ -109,8 +119,11 @@ class Test_all_sgt_policy(aetest.Testcase):
     @aetest.test
     def test4_check_policy_exist_in_dnac(self, dnac_obj):
         logging.info("Verify all policy from the input present in DNAC")
-        result = dnac_obj.sgtpolicy.is_policy_exist_in_dnac(dnac_obj.testinput["POLICYINPUTS"]["POLICYCHECKLIST"])
+        result = dnac_obj.sgtpolicy.is_policy_exist_in_dnac(dnac_obj.testinput\
+                                          ["POLICYINPUTS"]["POLICYCHECKLIST"])
         logging.info(result)
+        if not result['status']:
+            assert False
 
     @aetest.test
     def test5_get_all_policy_names(self, dnac_obj):
@@ -122,19 +135,48 @@ class Test_all_sgt_policy(aetest.Testcase):
     def test6_get_sgtpolicysummary(self, dnac_obj):
         logging.info("Getting SGT Policy summary details")
         result = dnac_obj.sgtpolicy.get_policyAccessSummary()
-        logging.info(result)        
+        logging.info(result)
 
     @aetest.test
-    def test7_delete_sgtpolicy(self, dnac_obj):
+    def test7_delete_sgtpolicy(self, steps, dnac_obj):
         logging.info("Deleting all SGT Policy from the input")
-        steps=Steps()
         for sgtpolicy_data in dnac_obj.testinput["POLICYINPUTS"]["DELETEPOLICYLIST"]:
-            with steps.start("Deleting SGT Policies",continue_= True) as step:
-                with step.start("Deleting SGT Policy from {} to {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]),continue_= True):
-                    if not dnac_obj.sgtpolicy.delete_policy(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"])['status']:
-                        step.failed("Failed deleting SGT Policy from {} to {}".format(sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]))
-                    else:
-                        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
-                        logging.info("Deleted SGT Policy from {} to {}".format(sgtpolicy_data['srcSGName'],sgtpolicy_data["dstSGName"]))
+            with steps.start("Deleting SGT Policy {}-{}".format(sgtpolicy_data\
+                 ["srcSGName"],sgtpolicy_data["dstSGName"]),continue_= True) as step:
+                if not dnac_obj.sgtpolicy.delete_policy(sgtpolicy_data["srcSGName"]\
+                                             ,sgtpolicy_data["dstSGName"])['status']:
+                    step.failed("Failed deleting SGT Policy from {} to {}".format\
+                           (sgtpolicy_data["srcSGName"],sgtpolicy_data["dstSGName"]))
+                else:
+                    step.passed("Deleted SGT Policy from {} to {}".format(sgtpolicy_data\
+                                           ['srcSGName'],sgtpolicy_data["dstSGName"]))
+        logging.info("Deploy after Test 9 delete policy")
+        dnac_obj.sgtpolicy.put_acaControllerServiceDeploy()
 
+    @aetest.test
+    def test8_delete_accesscontracts(self, steps, dnac_obj):
+        logging.info("Deleting all access contract from the input")
+        for ac_data in dnac_obj.testinput["CONTRACTINPUTS"]["DELETECONTRACTLIST"]:
+            with steps.start("Deleting access contract {}".format(ac_data\
+                                      ["contract_name"]),continue_= True) as step:
+                if not dnac_obj.accesscontracts.delete_contractAccessByName\
+                                             (ac_data["contract_name"])['status']:
+                    step.failed("Failed deleting access contract:{}".format\
+                                                       (ac_data["contract_name"]))
+                else:
+                    step.passed("Deleted access contract: {}".format(ac_data\
+                                                               ['contract_name']))
+        logging.info("Deploy after Test 8 Delete contract")
+        dnac_obj.accesscontracts.put_acaControllerServiceDeploy()
 
+    @aetest.test
+    def test9_delete_sgts(self, steps, dnac_obj):
+        logging.info("Deleting all SGTs from the input")
+        for sgtitem in dnac_obj.testinput["SGTINPUTS"]["DELETESGTLIST"]:
+            with steps.start("Deleting SGT {}".format(sgtitem["sgName"]),continue_= True) as step:
+                if not dnac_obj.securitygroups.deleteSecurityGroupByName(sgtitem["sgName"])['status']:
+                    step.failed("Failed deleting sgt:{}".format(sgtitem["sgName"]))
+                else:
+                    step.passed("Deleted SGT: {}".format(sgtitem['sgName']))
+        logging.info("Deploy after Test 9 delete sgts")
+        dnac_obj.securitygroups.pushAndVerifySecurityGroups()

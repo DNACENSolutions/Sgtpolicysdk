@@ -2,7 +2,7 @@
 	"SGTINPUTS": {
 		"CREATESGTLIST": [
 			{"sgName":"SGNAME5", "sgTag": 11001},
-			{"sgName":"SGNAME6", "sgTag": 12002}
+			{"sgName":"SGNAME6", "sgTag": 12003}
 		],
                 "CREATESGTVNLIST": [
                         {"sgName":"SGNAME11", "sgTag": 41001,"virtualNetworks":["DEFAULT_VN","test1234"]},
@@ -35,7 +35,7 @@
                 ]
 	},
 	"CONTRACTINPUTS": {
-		"CREATECONTRACTLLIST": [
+		"CREATECONTRACTLIST": [
 			{"contract_name":"CONTRACT1","description":"SAMPLE Contract1",
 				"contract_data" :[{"access": "DENY", 
                   	"applicationName":"wap-vcal-s",
@@ -65,7 +65,7 @@
                                           {"protocol":"TCP","ports":"465"}],
                         "logging": "OFF"}]}
                 ],
-                "GETCONTRACTLLIST": [
+                "GETCONTRACTLIST": [
                         {"contract_name":"solutiontest1"},
                         {"contract_name":"test"},
                         {"contract_name":"CONTRACT1"},
@@ -79,21 +79,23 @@
 	},
 	"POLICYINPUTS": {
 		"CREATEPOLICYLIST" : [
-		 {"policy_name":"test1","srcSGName":"SGNAME1", "dstSGName":"SGNAME4", "accessContract": "test41"},
-                 {"policy_name":"test2","srcSGName":"SGNAME4", "dstSGName":"SGNAME1", "accessContract": "test42"}
+		 {"policy_name":"policy1","srcSGName":"SGNAME5", "dstSGName":"SGNAME6", "accessContract": "CONTRACT1"},
+                 {"policy_name":"policy2","srcSGName":"SGNAME6", "dstSGName":"SGNAME5", "accessContract": "CONTRACT2"}
 		],
 		"UPDATEPOLICYLIST" : [
-                {"srcSGName":"SGNAME1", "dstSGName":"SGNAME4", "accessContract": "test"},
-                {"srcSGName":"SGNAME4", "dstSGName":"SGNAME1", "accessContract": "solutiontest1"}	
+                {"srcSGName":"SGNAME5", "dstSGName":"SGNAME6", "accessContract": "test"},
+                {"srcSGName":"SGNAME6", "dstSGName":"SGNAME5", "accessContract": "solutiontest1"}	
 		],
                 "POLICYCHECKLIST" : [
                 {"name": "Auditors-BYOD", "contract": "testacl"},
                 {"name": "Auditors-IPNetGroup2010", "contract": "Deny IP"},
-                {"name": "Employees-Auditors", "contract": "Deny IP"}
+                {"name": "Employees-Auditors", "contract": "Deny IP"},
+                {"name": "SGNAME5-SGNAME6", "contract": "test"},
+                {"name": "SGNAME6-SGNAME5", "contract": "solutiontest1"}
                 ],
                 "DELETEPOLICYLIST" : [
-                {"srcSGName":"SGNAME1", "dstSGName":"SGNAME4"},
-                {"srcSGName":"SGNAME4", "dstSGName":"SGNAME1"}
-                ]                
+                {"srcSGName":"SGNAME5", "dstSGName":"SGNAME6"},
+                {"srcSGName":"SGNAME6", "dstSGName":"SGNAME5"}
+                ]
 	}
 }
