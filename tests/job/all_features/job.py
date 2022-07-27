@@ -69,6 +69,8 @@ def main():
         print(result2)
 
     if str(task1.result) != "passed" or str(task2.result) != "passed":
+        print("Some testcase failed. Not executing policy test cases")
+    else:
         task3 = Task(testscript = script_name3,
                      cluster_inputs=clusterinput,
                      test_inputs=testinputs,
