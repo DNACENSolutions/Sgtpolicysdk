@@ -56,9 +56,9 @@ QuickUsageExample:
     Type "help", "copyright", "credits" or "license" for more information.
 
     >>> from sgtpolicysdk import DNACenterSGTPolicyAPI
-serverip="10.195.243.53"
-username="admin"
-password="Maglev123"
+serverip="xx.xx.xx.xx"
+username="xxxxxxxx"
+password="xxxxxxxx"
 version="2.2.3"
         
     >>> dnac = DNACenterSGTPolicyAPI(server=serverip,username=username,password=password)
